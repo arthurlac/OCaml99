@@ -1,6 +1,3 @@
-<<<<<<< HEAD
 # ~99 problems in OCaml
-=======
-# OCamlWorkspace
-Learn OCaml.
->>>>>>> b4a508c05eedb668d1ebfab83f83cbfec446c988
+
+Based on [this problem set](http://www.ic.unicamp.br/~meidanis/courses/mc336/2006s2/funcional/L-99_Ninety-Nine_Lisp_Problems.html) originally for lisp
