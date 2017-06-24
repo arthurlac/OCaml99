@@ -1,30 +1,25 @@
 open Core
 
-type 'a t =
-    | Empty
-    | Cons of 'a * 'a t
-
 let car = function
     | Empty -> None
     | Cons (hd, _) -> Some hd
 
+(* TODO should make some/none? *)
 let cdr = function
-    | Empty -> None
-    | Cons (_, tl) -> Some tl
+    | Empty -> Empty
+    | Cons (_, tl) -> tl
 
-let match_head ~elem ~l = match car l with
-    | None -> false
-    | Some elem2 -> elem = elem2
-
-let filter l ~pred = match l with
+let rec filter l ~pred = match l with
     | Empty -> Empty
     | Cons (hd, tl) -> if pred hd
         then Cons (hd, filter tl ~pred)
-        else fiter tl ~pred
+        else filter tl ~pred
 
-let append l1 l2 =
-    let rl1 = reverse l1 in
-    fold rl1 ~init:l2 ~f:(fun elem ~acc -> Cons (elem, acc))
+let reverse l =
+    let rec rev_aux new_l old_l = match old_l with
+        | Empty -> new_l
+        | Cons (hd, tl) -> rev_aux (Cons (hd, new_l)) tl
+    in rev_aux Empty l
 
 let partition_tf l ~pred =
     let rec partition_aux ~pred l l1 l2 = match l with
@@ -34,7 +29,7 @@ let partition_tf l ~pred =
             else partition_aux ~pred tl l1 (Cons (hd, l2))
     in partition_aux ~pred l Empty Empty
 
-let map l ~f = match l with
+let rec map l ~f = match l with
     | Empty -> Empty
     | Cons (hd, tl) -> Cons (f hd, map tl ~f)
     (* TODO Tail recursion possible? *)
@@ -46,22 +41,22 @@ let fold l ~init ~f =
         | Cons (hd, tl) -> fold_aux tl (f hd ~acc) ~f
     in fold_aux l init ~f
 
-let to_my_list = function
-    | [] -> Empty
-    | x :: xs -> Cons (x, to_my_list xs)
+let append l1 l2 =
+    let rl1 = reverse l1 in
+    fold rl1 ~init:l2 ~f:(fun elem ~acc -> Cons (elem, acc))
 
 let zip l1 l2 =
-    let zip_aux = match (l1, l2) with
-        | (Empty, Empty) -> Some zipl
-        | (Empty, _) | (_, Empty) -> None
-        | (Cons (x, xs), Cons (y, ys) -> Cons ((x, y), zip_aux xs ys) in
+    let rec zip_aux zipped l1 l2 = match (car l1, car l2) with
+        | (None, None) -> Some zipped
+        | (None, _) | (_, None) -> None
+        | (Some ll, Some lr) -> zip_aux (Cons ((ll, lr), zipped)) (cdr l1) (cdr l2)
+    in zip_aux Empty l1 l2
 
-
-(* quicksort *)
-(* uneffecient mess currently *)
+(* quicksort TODO review
 let rec sort_ints l = match l with
     | Empty -> Empty
     | Cons (hd, tl) ->
         let pred = fun y -> hd >= y in
         let lt, gte = partition_tf tl ~pred  in
         append (sort_ints lt) (Cons (hd, sort_ints gte))
+*)
