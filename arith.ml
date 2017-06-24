@@ -1,0 +1,6 @@
+(* Determine whether a given integer number is prime. *)
+(* Determine the greatest common divisor of two positive integer numbers. *)
+(* Determine whether two positive integer numbers are coprime. *)
+(* Calculate Euler's totient function phi(m). *)
+(* Determine the prime factors of a given positive integer. *)
+(* Determine the prime factors of a given positive integer (2). *)
