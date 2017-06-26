@@ -1,5 +1,7 @@
 open Core
 
+type 'a t = Empty | Cons of 'a * 'a t
+
 let car = function
     | Empty -> None
     | Cons (hd, _) -> Some hd
@@ -40,6 +42,10 @@ let fold l ~init ~f =
         | Empty -> acc
         | Cons (hd, tl) -> fold_aux tl (f hd ~acc) ~f
     in fold_aux l init ~f
+(*
+let fold_left =
+let fold_right =
+*)
 
 let append l1 l2 =
     let rl1 = reverse l1 in
