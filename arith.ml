@@ -8,10 +8,12 @@ let is_prime n = if n <= 1 then false else if n <= 3 then true else
 let rec gcd a b = if b = 0 then a else gcd b (a mod b)
 
 (* Determine whether two positive integer numbers are coprime. *)
-let coprime a b =
+let coprime a b = (gcd a b) = 1
 
 (* Calculate Euler's totient function phi(m). *)
 let totient_phi n  =
+    let seq_n = seq ~lb:1 ub:n in
+    filter ~p:(fun x -> coprime x n) seq_n
 
 (* Determine the prime factors of a given positive integer. *)
 let prime_factors n = 
