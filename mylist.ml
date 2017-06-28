@@ -30,11 +30,11 @@ let is_palindrome l = (=) l (Llist.rev l)
 
 
 (* Eliminate consecutive duplicates of list elements. *)
-let rec destutter l =
-    let match_head ~elem ~l = match
-        | car l with None -> false
-        | Some x -> x = elem in
-    match l with
+let match_head ~elem ~l = match car l with
+    | None -> false
+    | Some x -> x = elem
+
+let rec destutter l = match l with
     | Empty -> Empty
     | Cons (hd, tl) -> if match_head ~elem:hd ~l:tl
         then destutter tl
@@ -81,19 +81,34 @@ let split l ~n =
 let slice l ~lb ~ub =
     let slice_aux l lb ub ix = if ix <
         if ix = ub then Some l else match l with
-        | Empty -> None
-        | Cons (hd, tl) ->
+            | Empty -> None
+            | Cons (hd, tl) ->
 
 (* Rotate a list N places to the left. *)
+(* TODO check for off by one err *)
+(* TODO bounds check *)
 let rotate l ~n =
+    let (left, right) = split l ~n in
+    Llist.append right left
 
 (* Remove the K'th element from a list. *)
+(* TODO Make what the return is more explicit *)
 let drop_at_nth l ~n =
     let aux l ix r = if ix = n then (car r, append l r) else
         match 
 
 (* Insert an element at a given position into a list. *)
-let insert_at_nth l ~n =
+(* TODO append at end if n > len l ? insert_at_nth_exn *)
+(* TODO see if an be built in order to not need rev *)
+(* TODO check n => 0 *)
+let insert_at_nth l ~n ~elem =
+    let rec aux l ix r = if ix = n then append l (Cons (elem, r)) else
+        match l with
+            | Empty -> Cons (elem, r)
+            | Cons (hd, tl) -> aux tl (ix + 1) (Cons (hd, r))
+    in rev (aux l 0 Empty)
+  (*in      aux Empty 0 l XXX see todo no2 *)
+
 
 (* Create a list containing all integers within a given range. *)
 let seq ~lb ~ub =
