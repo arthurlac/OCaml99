@@ -14,7 +14,7 @@ let pick l k =
 
 
 (* Find the number of elements of a list. *)
-let len l = fold l ~init:0 ~f:(fun acc _ -> acc + 1);;
+let len l = Llist.fold l ~init:0 ~f:(fun acc _ -> acc + 1)
 
 
 (* Reverse a list. *)
@@ -26,7 +26,7 @@ let rev l =
 
 
 (* Find out whether a list is a palindrome. *)
-let is_palindrome l = (=) l (rev l)
+let is_palindrome l = (=) l (Llist.rev l)
 
 
 (* Eliminate consecutive duplicates of list elements. *)
@@ -41,17 +41,84 @@ let rec destutter l =
         else Cons (hd, destutter tl)
 
 (* Run-length encoding of a list. *)
+let pack l =
+    let pack_aux l counts = in
+
 (* Decode a run-length encoded list. *)
+let unpack counts =
+
+(* Duplicate the elements of a list. *)
+let prep_n_times ~n hd tl =
+    let rec prep_aux c hd tl = match c with
+        | 0 -> tl
+        | _ -> prep_aux (c - 1) hd (Cons (hd, tl))
+    in prep_aux n hd tl
+
+let dupli l = 
+    Llist.fold_right l ~init:Empty ~f:(fun hd ~acc -> prep_n_times ~n:2 hd acc)
+
 (* Replicate the elements of a list a given number of times. *)
+let repli l n =
+    Llist.fold_right l ~init:Empty ~f:(fun hd ~acc -> prep_n_times ~n hd acc)
+
 (* Drop every N'th element from a list. *)
+let drop_every_nth l ~n =
+    let prep_or_drop ix hd tl = if n mod ix = 0 then tl else Cons (hd, tl)
+    let rec drop_aux l ix nl = match l with
+        | Empty -> l
+        | Cons (hd, tl) -> drop_aux tl (ix + 1) (prep_or_drop ix hd nl) in
+    drop_aux (reverse l) 0 Empty
+
 (* Split a list into two parts; the length of the first part is given. *)
+let split l ~n =
+    let rec split_aux left right dec >= if dec = 0 then ((reverse left), right)
+        else match right with
+            | Empty -> ((reverse left), right)
+            | Cons (hd, tl) -> split_aux (Cons (hd, left)) tl (dec - 1)
+    in split_aux Empty l n
+
 (* Extract a slice from a list. *)
+let slice l ~lb ~ub =
+    let slice_aux l lb ub ix = if ix <
+        if ix = ub then Some l else match l with
+        | Empty -> None
+        | Cons (hd, tl) ->
+
 (* Rotate a list N places to the left. *)
+let rotate l ~n =
+
 (* Remove the K'th element from a list. *)
+let drop_at_nth l ~n =
+    let aux l ix r = if ix = n then (car r, append l r) else
+        match 
+
 (* Insert an element at a given position into a list. *)
+let insert_at_nth l ~n =
+
 (* Create a list containing all integers within a given range. *)
-(*  Extract a given number of randomly selected elements from a list. *)
+let seq ~lb ~ub =
+    let rec seq_aux lb ub l = if lb = ub then l else
+        seq_aux lb (ub - 1) (Cons (ub, l))
+    in if lb =< ub then seq_aux lb ub Empty else seq_aux ub lb Empty
+
+(* Extract a given number of randomly selected elements from a list. *)
+let rndm_extract l ~count =
+    (* TODO Make what the return is more explicit *)
+    let rec aux count l selected = if count =< 0 then (selected, l) else
+        let rnd_ix = Random.int (len l) in
+        let (pick, nl) = drop_at_nth l ~n:rnd_ix in
+        lotto_aux (count - 1) nl (Cons (pick, selected)) in
+    aux count l Empty
+
 (* Lotto: Draw N different random numbers from the set 1..M. *)
+let lotto ~count ~ub = 
+    let (picks, _) = rndm_extract (seq ~lb:1 ~ub) ~count in
+    picks
+
 (* Generate a random permutation of the elements of a list. *)
+let permu l =
+
 (* Generate the combinations of K distinct objects chosen from the N elements of a list *)
+
 (* Group the elements of a set into disjoint subsets. *)
+
