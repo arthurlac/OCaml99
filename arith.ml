@@ -11,9 +11,13 @@ let rec gcd a b = if b = 0 then a else gcd b (a mod b)
 let coprime a b = (gcd a b) = 1
 
 (* Calculate Euler's totient function phi(m). *)
-let totient_phi n  =
-    let seq_n = seq ~lb:1 ub:n in
-    filter ~p:(fun x -> coprime x n) seq_n
+let seq ~lb ~ub =
+    let rec aux lb ub = if lb > ub then [] else lb :: aux (lb + 1) ub in
+    aux lb ub
+
+let phi n  = seq ~lb:1 ~ub:(n - 1)
+    |> List.filter ~f:(fun x -> coprime x n)
+    |> List.length
 
 (* Determine the prime factors of a given positive integer. *)
 let prime_factors n = 
