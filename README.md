@@ -20,7 +20,7 @@ Based on [this problem set](http://www.ic.unicamp.br/~meidanis/courses/mc336/200
 * Remove the K'th element from a list.
 * Insert an element at a given position into a list.
 * Create a list containing all integers within a given range.
-*  Extract a given number of randomly selected elements from a list.
+* Extract a given number of randomly selected elements from a list.
 * Lotto: Draw N different random numbers from the set 1..M.
 * Generate a random permutation of the elements of a list.
 * Generate the combinations of K distinct objects chosen from the N elements of a list
