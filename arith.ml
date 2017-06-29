@@ -56,4 +56,5 @@ let prime_list ~lb ~ub =
 let goldbach n =
 
 (* A list of Goldbach compositions. *)
-let goldbach_list ~lb ~ub =
+let goldbach_list ~lb ~ub = seq ~lb ~ub
+    |> List.map ~f:(fun x -> goldbach x)
