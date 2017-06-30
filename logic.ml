@@ -35,8 +35,8 @@ let eval expr ctxt =
         | Some b -> b
         | None -> raise Variable_Unbound in
     let rec eval' expr = match expr with
-        | And   (x, y) -> eval x && eval y
-        | Or    (x, y) -> eval x || eval y
+        | And   (x, y) -> eval' x && eval' y
+        | Or    (x, y) -> eval' x || eval' y
         | Not   x      -> not (eval x)
         | Var   x      -> unbind x
         | Const x      -> x
