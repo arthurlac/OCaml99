@@ -53,30 +53,36 @@ let pack l ~equal =
     in aux l []
 
 (* Decode a run-length encoded list. *)
-(* TODO *)
+let prep_n_times ~n ~elt ~tl =
+    let rec prep_aux c elt tl = match c with
+        | 0 -> tl
+        | _ -> prep_aux (c - 1) elt (Cons (elt, tl))
+    in prep_aux n elt tl
+
 let unpack counts =
+    let aux acc (elt, c) = prep_n_times ~n:c ~elt ~tl:acc
+        let elt_l = 
+    in List.fold_right counts ~init:Empty ~f:aux
 
 (* Duplicate the elements of a list. *)
-let prep_n_times ~n hd tl =
-    let rec prep_aux c hd tl = match c with
-        | 0 -> tl
-        | _ -> prep_aux (c - 1) hd (Cons (hd, tl))
-    in prep_aux n hd tl
-
 let dupli l =
-    Llist.fold_right l ~init:Empty ~f:(fun hd ~acc -> prep_n_times ~n:2 hd acc)
+    Llist.fold_right l ~init:Empty ~f:(
+        fun hd ~acc -> prep_n_times ~n:2 ~elt:hd ~tl:acc
+    )
 
 (* Replicate the elements of a list a given number of times. *)
 let repli l n =
-    Llist.fold_right l ~init:Empty ~f:(fun hd ~acc -> prep_n_times ~n hd acc)
+    Llist.fold_right l ~init:Empty ~f:(
+        fun hd ~acc -> prep_n_times ~n ~elt:hd ~tl:acc
+    )
 
 (* Drop every N'th element from a list. *)
 let drop_every_nth l ~n =
-    let prep_or_drop ix hd tl = if n mod ix = 0 then tl else Cons (hd, tl)
+    let prep_or_drop ix hd tl = if n mod ix = 0 then tl else Cons (hd, tl) in
     let rec drop_aux l ix nl = match l with
         | Empty -> l
-        | Cons (hd, tl) -> drop_aux tl (ix + 1) (prep_or_drop ix hd nl) in
-    drop_aux (reverse l) 0 Empty
+        | Cons (hd, tl) -> drop_aux tl (ix + 1) (prep_or_drop ix hd nl)
+    in drop_aux (reverse l) 0 Empty
 
 (* Split a list into two parts; the length of the first part is given. *)
 (* TODO Clean *)
