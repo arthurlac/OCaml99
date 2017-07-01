@@ -41,9 +41,16 @@ let rec destutter l = match l with
         else Cons (hd, destutter tl)
 
 (* Run-length encoding of a list. *)
-(* TODO *)
-let pack l =
-    let pack_aux l counts = in
+let pack l ~equal =
+    let inc counts elt = 
+        let c = match List.Assoc.find counts elt ~equal with
+            | None -> 0
+            | Some x -> x
+        in List.Assoc.add ~equal counts elt (c + 1)
+    let aux l counts = match l with
+        | Empty -> counts
+        | Cons (hd, tl) -> aux tl (inc counts hd)
+    in aux l []
 
 (* Decode a run-length encoded list. *)
 (* TODO *)
