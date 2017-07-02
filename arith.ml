@@ -12,24 +12,41 @@ let rec gcd a b = if b = 0 then a else gcd b (a mod b)
 let coprime a b = (gcd a b) = 1
 
 (* Calculate Euler's totient function phi(n). *)
-let seq ~lb ~ub =
+let seq lb ub =
     let rec aux lb ub = if lb > ub then [] else lb :: aux (lb + 1) ub in
     aux lb ub
 
-let phi n  = seq ~lb:1 ~ub:(n - 1)
+let phi n  = seq 1 (n - 1)
     |> List.filter ~f:(fun x -> coprime x n)
     |> List.length
 
 (* Determine the prime factors of a given positive integer. *)
-(* TODO sieve of greek dude *)
-let primes_seq ~ub = seq ~lb:2 ~ub:(int_sqrt n)
-    |> List.filter ~f:(fun x -> is_prime x)
-
-(* Determine the prime factors of a given positive integer. *)
+(* TODO Clean *)
 let prime_factors n =
+    let primes = primes_seq n in
+    let rec aux cur_n ps fs =
+        (* TODO Clean up this pred both may not be ness idk *)
+        (* len predicate rm may need no (hd|tl)_exns used below *)
+        if List.length ps < 1 || cur_n <= 1 then fs
+        else if cur_n mod div = 0 then
+            aux (cur_n / div) ps (List.hd_exn ps :: fs)
+        else
+            aux cur_n (List.tail_exn ps) fs
+    in aux n (List.rev primes) []
 
 (* Determine the prime factors of a given positive integer (2). *)
-let prime_factor_pairs n =
+(* TODO I feel like this could be more clean *)
+let pack l =
+    let equal = Int.equal in
+    let inc counts elt =
+        let c = match List.Assoc.find counts elt ~equal with
+            | None -> 0
+            | Some x -> x
+        in List.Assoc.add ~equal counts elt (c + 1)
+    in List.fold l ~init:[] ~f:inc
+
+let prime_factor_pairs n = prime_factors n
+    |> pack
 
 (* Calculate Euler's totient function phi(n) (improved).
  * If the list of the prime factors of a number m is known in the form
@@ -44,7 +61,12 @@ let phi' n = prime_factor_pairs n
     )
 
 (* A list of prime numbers. *)
-let prime_list ~lb ~ub =
+(* TODO *)
+let primes_seq ub =
+    let rec aux div primes = if div = 666 then primes else
+        List.filter primes ~f:(fun x -> x <> div && x mod div <> 0)
+        |> aux (div + 1)
+    in aux 2 (seq ~lb:2 ~ub)
 
 (*  Goldbach's conjecture says that every positive even number greater than 2
  *  is the sum of two prime numbers. Example: 28 = 5 + 23. It is one of the
