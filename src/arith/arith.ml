@@ -1,14 +1,17 @@
 (* Determine whether a given integer number is prime. *)
 (* TODO *)
-exception Short_circuit
-let is_prime n = 
-   if n <= 1 then false else if n <= 3 then true else
-   if n mod 2 = 0 || n mod 3 = 0 then false else
-   try 
-
-(* A list of prime numbers. *)
 let int_sqrt x = Float.iround_towards_zero_exn (sqrt (float_of_int x))
 
+let is_prime n =
+    let rec aux div = if div * div <= n then true else
+        if n mod div = 0 || n mod (div + 2) = 0 then false
+        else aux (div + 6)
+    in
+    if n <= 1                     then false else
+    if n <= 3                     then true  else
+    if n mod 2 = 0 or n mod 3 = 0 then false else aux 5
+
+(* A list of prime numbers. *)
 let is_prime_array n =
     (* Let ints be an array of Boolean values, indexed by integers
      * 0 to n, initially all set to true. Of course 0 and 1 are not
@@ -33,6 +36,12 @@ let primes_seq n = is_prime_array n
     |> Array.foldi ~init:[] ~f:(fun ix acc is_prime ->
         if is_prime then (ix :: acc) else acc)
     |> List.rev
+
+(* TODO Benchmark
+ * seq 1 n |> List.filter ~f:is_prime
+ * vs
+ * primes_seq n
+ *)
 
 (* Determine the greatest common divisor of two positive integer numbers. *)
 let rec gcd a b = if b = 0 then a else gcd b (a mod b)
