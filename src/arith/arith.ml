@@ -1,9 +1,38 @@
 (* Determine whether a given integer number is prime. *)
 (* TODO *)
 exception Short_circuit
-let is_prime n = if n <= 1 then false else if n <= 3 then true else
+let is_prime n = 
+   if n <= 1 then false else if n <= 3 then true else
    if n mod 2 = 0 || n mod 3 = 0 then false else
    try 
+
+(* A list of prime numbers. *)
+let int_sqrt x = Float.iround_towards_zero_exn (sqrt (float_of_int x))
+
+let is_prime_array n =
+    (* Let ints be an array of Boolean values, indexed by integers
+     * 0 to n, initially all set to true. Of course 0 and 1 are not
+     * primes and as such must be set to false. *)
+    let ints = Array.create (n + 1) true in
+    ints.(0) <- false;
+    ints.(1) <- false;
+    let lim = int_sqrt n in
+    (* TODO explain *)
+    for i = 2 to lim do print_int i;
+        if ints.(i) then
+            let multiple = ref (i * i) in
+            while (!multiple <= n) do
+                print_int !multiple;
+                ints.(!multiple) <- false;
+                multiple := !multiple + i (* next multiple *)
+            done
+    done;
+    ints
+
+let primes_seq n = is_prime_array n
+    |> Array.foldi ~init:[] ~f:(fun ix acc is_prime ->
+        if is_prime then (ix :: acc) else acc)
+    |> List.rev
 
 (* Determine the greatest common divisor of two positive integer numbers. *)
 let rec gcd a b = if b = 0 then a else gcd b (a mod b)
@@ -35,18 +64,16 @@ let prime_factors n =
     in aux n (List.rev primes) []
 
 (* Determine the prime factors of a given positive integer (2). *)
-(* TODO I feel like this could be more clean *)
 let pack l =
     let equal = Int.equal in
     let inc counts elt =
-        let c = match List.Assoc.find counts elt ~equal with
+        let c = match List.Assoc.find ~equal counts elt with
             | None -> 0
             | Some x -> x
         in List.Assoc.add ~equal counts elt (c + 1)
     in List.fold l ~init:[] ~f:inc
 
-let prime_factor_pairs n = prime_factors n
-    |> pack
+let prime_factor_pairs n = prime_factors n |> pack
 
 (* Calculate Euler's totient function phi(n) (improved).
  * If the list of the prime factors of a number m is known in the form
@@ -55,28 +82,18 @@ let prime_factor_pairs n = prime_factors n
  *  phi n = (((p1 - 1) * p1) ** (e1 - 1)) + ...
  *)
 let int_exp x y = (float_of_int x) ** (float_of_int y) |> int_of_float
-let phi' n = prime_factor_pairs n
-    |> List.fold ~init:0 ~f:(fun acc (p, e) ->
-        acc + (int_exp ((p - 1) * p) (e - 1))
-    )
-
-(* A list of prime numbers. *)
-(* TODO *)
-let primes_seq ub =
-    let rec aux div primes = if div = 666 then primes else
-        List.filter primes ~f:(fun x -> x <> div && x mod div <> 0)
-        |> aux (div + 1)
-    in aux 2 (seq ~lb:2 ~ub)
+let phi' n =
+    let phi_fn acc (p, e) = acc + (int_exp ((p - 1) * p) (e - 1)) in
+    prime_factor_pairs n |> List.fold ~init:0 ~f:phi_fn
 
 (*  Goldbach's conjecture says that every positive even number greater than 2
  *  is the sum of two prime numbers. Example: 28 = 5 + 23. It is one of the
  *  most famous facts in number theory that has not been proved to be correct
  *  in the general case. It has been numerically confirmed up to very large
- *  numbers (much larger than we can go). Write a predicate to find the two
+ *  numbers (much larger than we can go). Write a function to find the two
  *  prime numbers that sum up to a given even integer.
  *  *)
-let goldbach n =
+let goldbach n = 
 
 (* A list of Goldbach compositions. *)
-let goldbach_list ~lb ~ub = seq ~lb ~ub
-    |> List.map ~f:(fun x -> goldbach x)
+let goldbach_list ~lb ~ub = seq ~lb ~ub |> List.map ~f:(fun x -> goldbach x)
