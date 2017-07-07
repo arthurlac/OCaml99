@@ -2,7 +2,7 @@
 open Option.Monad_infix
 
 type 'a t =
-    | Empty
+    | Leaf of 'a
     | Node of 'a * 'a t * 'a t
 
 (* Sample data for debugging *)
@@ -19,11 +19,13 @@ let lcar t = left t  >>= car
 let rcar t = right t >>= car
 
 (* Construct completely balanced binary trees. *)
-let cons n v = 
+(*let cons n v = *)
 
 (* Symmetric binary trees. *)
 exception Break
 
+(* TODO A more tail recursive version *)
+(* flat t |> is_palindrome *)
 let is_sym t =
     let rec aux t = match t with
         | Empty -> true
@@ -35,19 +37,39 @@ let is_sym t =
 (* Binary search trees (dictionaries).
  * Construct a binary search tree from a list of integer numbers.
  *)
-let cons l =
+(* let cons l = *)
 
 (* Generate-and-test paradigm. *)
+
 (* Construct height-balanced binary trees. *)
+
 (* Construct height-balanced binary trees with a given number of nodes. *)
+
 (* Count the leaves of a binary tree. *)
+let count_leaves t =
+    let rec aux = function
+        | Leaf of x -> 1
+        | Node (_, l, r) -> (aux r) + (aux l)
+    in aux t
+
 (* Collect the leaves of a binary tree in a list. *)
+let leaves t =
+    let rec aux = function
+        | Leaf of x -> [x]
+        | Node (_, l, r) -> (aux r) @ (aux l)
+    in aux t
+
 (* Collect the internal nodes of a binary tree in a list. *)
+
 (* Collect the nodes at a given level in a list. *)
+
 (* Construct a complete binary tree. *)
+
 (* Layout a binary tree. *)
+
 (* A string representation of binary trees. *)
+
 (* Preorder and inorder Osequences of binary trees. *)
-let t4  = Node (4, t3, t3);;
+
 (* Dotstring representation of binary trees. *)
 
