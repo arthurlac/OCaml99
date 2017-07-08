@@ -53,7 +53,7 @@ let seq lb ub =
     let rec aux lb ub = if lb > ub then [] else lb :: aux (lb + 1) ub in
     if lb < ub then aux lb ub else aux ub lb
 
-let phi n  = seq 1 (n - 1)
+let phi n = seq 1 (n - 1)
     |> List.filter ~f:(fun x -> coprime x n)
     |> List.length
 
@@ -114,7 +114,7 @@ let goldbach n = if n mod 2 <> 0 || n < 2 then assert false else
 
 
 (* A list of Goldbach compositions. *)
-(* TODO Memoify ? *)
+(* TODO Memoify ? *) (* TODO feed primes list into goldbach *)
 let goldbach_list lb ub = seq lb ub
     |> List.filter ~f:(fun x -> x mod 2 = 0 && x > 2) (* Rewrite seq to avoid filter ? *)
     |> List.map ~f:(fun x -> goldbach x)
