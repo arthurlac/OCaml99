@@ -28,7 +28,12 @@ let find_vars expr =
         | Not x -> aux vars x
     in aux expr empty
 
-let gen_ctxts vars = 
+(* TODO Really want to improve this fn, seems 2^n by nature tho  *)
+let gen_ctxts vars =
+    let rec aux l = match l with
+        | [] -> []
+        | x :: xs -> (x, true) :: (aux xs) @ (x, false) :: (aux xs)
+    in aux vars
 
 let eval expr ctxt =
     let unbind x = match List.Assoc.find ctxt ~equal:String.equal x with
@@ -58,6 +63,3 @@ let gen_truth_table expr = find_vars expr
  * TODO apply result caching
  *)
 let gray_code n =
-
-(* Huffman code *)
-let huff s =
