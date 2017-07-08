@@ -58,8 +58,15 @@ let gen_truth_table expr = find_vars expr
  *
  * gray_code 1 = ["0";"1"]
  * gray_code 2 = ["00";"01";"11";"10"]
- * gray_code 3 = ["000";"001";"011";"010";´110´;´111´;´101´;´100´]
+ * gray_code 3 = ["000";"001";"011";"010";"110";"111";"101";"100"]
  *
- * TODO apply result caching
+ * TODO apply result caching !!!!
  *)
 let gray_code n =
+    let pref_all p l = List.map l ~f:(fun a -> p ^ a) in
+    let rec aux = match n with
+    | 1 -> ["0";"1"]
+    | _ ->
+        let l = aux (n - 1) in
+        let l2 = List.rev l in
+        (pref_all "0" l) @ (pref_all "1" l2)
