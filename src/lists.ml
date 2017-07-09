@@ -142,6 +142,12 @@ let lotto ~count ~ub =
 
 (* Generate a random permutation of the elements of a list. *)
 let permu l =
+    let rnd_ix = Random.int (len l) in
+    let rec aux acc to_extract_from perms_left =
+        if perms_left = 0 then acc else
+            let selction, rem = rndm_extract to_extract_from in
+            aux (selection :: acc) rem (perms_left - 1)
+    in aux [] l rnd_ix
 
 (* Generate the combinations of K distinct objects chosen from the N elements of a list *)
 
