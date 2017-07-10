@@ -1,9 +1,62 @@
+open Core
+
+type 'a t = Empty | Cons of 'a * 'a t
+
+exception Empty_list_car
+let car = function Empty -> None | Cons (hd, _) -> Some hd
+let car_exn = function Empty -> raise Empty_list_car | Cons (hd, _) -> hd
+
+(* TODO should make some/none? *)
+let cdr = function
+    | Empty -> Empty
+    | Cons (_, tl) -> tl
+
+let rec filter l ~pred = match l with
+    | Empty -> Empty
+    | Cons (hd, tl) -> if pred hd
+        then Cons (hd, filter tl ~pred)
+        else filter tl ~pred
+
+let reverse l =
+    let rec rev_aux new_l old_l = match old_l with
+        | Empty -> new_l
+        | Cons (hd, tl) -> rev_aux (Cons (hd, new_l)) tl
+    in rev_aux Empty l
+
+let partition_tf l ~pred =
+    let rec partition_aux ~pred l l1 l2 = match l with
+        | Empty -> (l1, l2)
+        | Cons (hd, tl) -> if pred hd
+            then partition_aux ~pred tl (Cons (hd, l1)) l2
+            else partition_aux ~pred tl l1 (Cons (hd, l2))
+    in partition_aux ~pred l Empty Empty
+
+let rec map l ~f = match l with
+    | Empty -> Empty
+    | Cons (hd, tl) -> Cons (f hd, map tl ~f)
+
+let fold l ~init ~f = 
+    let rec fold_aux l acc ~f = match l with
+        | Empty -> acc
+        | Cons (hd, tl) -> fold_aux tl (f acc hd) ~f
+    in fold_aux l init ~f
+
+let append l1 l2 =
+    let rl1 = reverse l1 in
+    fold rl1 ~init:l2 ~f:(fun acc elt -> Cons (elt, acc))
+
+let zip l1 l2 =
+    let rec zip_aux zipped l1 l2 = match (car l1, car l2) with
+        | (None, None) -> Some zipped
+        | (None, _) | (_, None) -> None
+        | (Some ll, Some lr) -> zip_aux (Cons ((ll, lr), zipped)) (cdr l1) (cdr l2)
+    in zip_aux Empty l1 l2
+
 (* Find the last but one box of a list.  *)
-let penultimate = function
+let rec penultimate = function
     | Empty -> None
     | Cons (hd, Cons (tl, Empty)) -> Some (hd, tl)
     | Cons (_, tl) -> penultimate tl
-
 
 (* Find the K'th element of a list. *)
 let pick l k =
@@ -14,19 +67,13 @@ let pick l k =
 
 
 (* Find the number of elements of a list. *)
-let len l = Llist.fold l ~init:0 ~f:(fun acc _ -> acc + 1)
+let len l = fold l ~init:0 ~f:(fun acc _ -> acc + 1)
 
 
-(* Reverse a list. *)
-let rev l =
-    let rev_aux new_l old_l = match old_l with
-        | Empty -> new_l
-        | Cons (hd, tl) -> rev_aux (Cons (hd, new_l)) tl
-    in rev_aux Empty l
-
+(* Reverse a list. see reverse *)
 
 (* Find out whether a list is a palindrome. *)
-let is_palindrome l = (=) l (Llist.rev l)
+let is_palindrome l = (=) l (reverse l)
 
 
 (* Eliminate consecutive duplicates of list elements. *)
@@ -47,7 +94,8 @@ let pack l ~equal =
             | None -> 0
             | Some x -> x
         in List.Assoc.add ~equal counts elt (c + 1)
-    let aux l counts = match l with
+    in
+    let rec aux l counts = match l with
         | Empty -> counts
         | Cons (hd, tl) -> aux tl (inc counts hd)
     in aux l []
@@ -60,21 +108,19 @@ let prep_n_times ~n ~elt ~tl =
     in prep_aux n elt tl
 
 let unpack counts =
-    let aux acc (elt, c) = prep_n_times ~n:c ~elt ~tl:acc
-        let elt_l = 
-    in List.fold_right counts ~init:Empty ~f:aux
+    let rec aux acc (elt, c) = prep_n_times ~n:c ~elt ~tl:acc in
+    fold counts ~init:Empty ~f:aux
 
 (* Duplicate the elements of a list. *)
 let dupli l =
-    Llist.fold_right l ~init:Empty ~f:(
-        fun hd ~acc -> prep_n_times ~n:2 ~elt:hd ~tl:acc
-    )
+    fold l ~init:Empty ~f:(fun acc hd -> prep_n_times ~n:2 ~elt:hd ~tl:acc)
+    |> reverse
 
 (* Replicate the elements of a list a given number of times. *)
 let repli l n =
-    Llist.fold_right l ~init:Empty ~f:(
-        fun hd ~acc -> prep_n_times ~n ~elt:hd ~tl:acc
-    )
+    fold l ~init:Empty ~f:(
+        fun acc hd -> prep_n_times ~n ~elt:hd ~tl:acc
+    ) |> reverse
 
 (* Drop every N'th element from a list. *)
 let drop_every_nth l ~n =
@@ -101,12 +147,12 @@ let slice l ~lb ~ub =
 (* TODO bounds check *)
 let rotate l ~n =
     let (left, right) = split l ~n in
-    Llist.append right left
+    append right left
 
 (* Remove the K'th element from a list. *)
 exception Out_Of_Bounds
 let drop_at_nth_exn l ~n =
-    let rec aux l ix r = if ix = n then append l (cdr r) else
+    let rec aux l ix r = if ix = n then (car_exn l, append l (cdr r)) else
         match r with
             | Empty -> raise Out_Of_Bounds
             | Cons (hd, tl) -> aux (Cons (hd, l)) (ix + 1) tl
@@ -122,21 +168,21 @@ let insert_at_nth_exn l ~n ~elem =
 
 (* Create a list containing all integers within a given range. *)
 let seq lb ub =
-    let rec seq_aux lb ub l = if lb = ub then l else
-        seq_aux lb (ub - 1) (Cons (ub, l))
-    in if lb =< ub then seq_aux lb ub Empty else seq_aux ub lb Empty
+    let rec aux lb ub l = if lb = ub then l else
+        aux lb (ub - 1) (Cons (ub, l))
+    in if lb <= ub then aux lb ub Empty else aux ub lb Empty
 
 (* Extract a given number of randomly selected elements from a list. *)
 let rndm_extract l ~count =
-    (* TODO Make what the return is more explicit *)
-    let rec aux count l selected = if count =< 0 then (selected, l) else
+    let rec aux count l selected = if count <= 0 then (selected, l) else
         let rnd_ix = Random.int (len l) in
-        let (pick, nl) = drop_at_nth l ~n:rnd_ix in
+        let (pick, nl) = drop_at_nth_exn l ~n:rnd_ix in
         aux (count - 1) nl (Cons (pick, selected)) in
     aux count l Empty
 
 (* Lotto: Draw N different random numbers from the set 1..M. *)
-let lotto ~count ~ub = 
+exception Bad_call
+let lotto ~count ~ub = if count > ub then raise Bad_call else
     let (picks, _) = rndm_extract (seq 1 ub) ~count in
     picks
 
@@ -145,9 +191,9 @@ let permu l =
     let rnd_ix = Random.int (len l) in
     let rec aux acc to_extract_from perms_left =
         if perms_left = 0 then acc else
-            let selction, rem = rndm_extract to_extract_from in
-            aux (selection :: acc) rem (perms_left - 1)
-    in aux [] l rnd_ix
+            let selection, rem = rndm_extract ~count:1 to_extract_from in
+            aux (Cons (selection, acc)) rem (perms_left - 1)
+    in aux Empty l rnd_ix
 
 (* Generate the combinations of K distinct objects chosen from the N elements of a list *)
 
