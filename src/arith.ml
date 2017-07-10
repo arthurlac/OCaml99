@@ -1,3 +1,5 @@
+open Core
+
 (* Determine whether a given integer number is prime. *)
 let int_sqrt x = Float.iround_towards_zero_exn (sqrt (float_of_int x))
 
