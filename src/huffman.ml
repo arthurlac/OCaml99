@@ -1,48 +1,54 @@
-open Core (* For Heap *)
-let fs = [ ("a", 45); ("b", 13); ("c", 12); ("d", 16); ("e", 9); ("f", 5) ];;
+open Core
 
-(* # Huffman.encode ["a", 10;  "b", 15;  "c", 30;  "d", 16;  "e", 29];;
- * - : (string * string) list = [("d", "00"); ("a", "010"); ("b", "011"); ("e", "10"); ("c", "11")]
- *)
+module Huffman : sig
+    val encode     : ('a * int) list -> ('a * string) list
+    val encode_str : string -> (char * string) list
+end = struct
+    module HT : sig
+        type 'a tree = Leaf of 'a * int | Node of int * 'a tree * 'a tree
+        val sum   : 'a tree -> int
+        val leaf  : 'a * int -> 'a tree
+        val node  : 'a * int -> 'a * int -> 'a tree
+        val merge : 'a tree -> 'a tree -> 'a tree
+    end = struct
+        type 'a tree = Leaf of 'a * int |  Node of int * 'a tree * 'a tree
+        let sum t = match t with Leaf (_, s) -> s | Node (s, _, _) -> s
+        let leaf p = Leaf (fst p, snd p)
+        let node p p' = Node (snd p + snd p', leaf p, leaf p')
+        let merge t t' = let s = sum t + sum t' in
+            if sum t < sum t' then Node (s, t', t) else Node (s, t, t')
+    end
 
-(* TODO Make functor with elt : match sig of comparable *)
-module Huffman = struct
+    let gen_tree pairs =
+        let rec aux acc ps = match ps with
+            | hd :: nxt :: tl -> aux (HT.merge acc (HT.node hd nxt)) tl
+            | hd :: tl -> HT.merge (HT.leaf hd) acc
+            | [] -> assert false
+        in match pairs with
+            | p :: p' :: rest -> aux (HT.node p p') rest
+            | _ -> assert false
 
-    type t = List.Assoc.t
+    let gen_encoding tree =
+        let rec aux acc = function
+            | HT.Leaf (c, _) -> [(c, acc)]
+            | HT.Node (_, l, r) -> aux (acc ^ "0") r @ aux (acc ^ "1") l
+    in aux "" tree
 
-    type tree =
-
-    (* Simple qsort of pairs based on count as snd
-     * # order_pairs [("a", 4); ("b", 7); ("c", 5); ("d", 2)];;
-     * - : (string * int) list = [("d", 2); ("a", 4); ("c", 5); ("b", 7)]
-     *)
-    let rec order_pairs fp = match fp with
-        | [] -> []
-        | (s, c) :: tl -> let pred = fun (s', c') -> c >= c' in
-            let lt, gte = List.partition_tf tl ~f:pred in
-            (order_pairs lt) @ ((s, c) :: order_pairs gte)
-
-    let gen_pq ord_pairs =
-        let h = Heap.create () ~cmp:String.compare in
-        List.fold pairs ~init:[] ~f:(
-        fun (symbol, count) ->
-        
-
-    let gen_encoding pq =
-
-    (* TODO Check *) (* TODO Better name *)
-    let gen_pairs content ~fold ~equal =
+    let str_to_freq_pairs str =
+        let equal = Char.equal in
         let inc counts elt =
             let c = match List.Assoc.find counts elt ~equal with
                 | None -> 0
                 | Some x -> x
             in List.Assoc.add ~equal counts elt (c + 1)
-    in fold ~init:[] ~f:inc content
+    in String.fold str ~init:[] ~f:inc
 
-    let encode_pairs ps = order_pairs ps |> gen_pq |> gen_encoding
+    (* TODO *)
+    let order_pairs ps = ps
 
-    let str_to_freq_pairs str = gen_pairs str ~fold:String.fold ~equal:String.equal
-
-    let encode_str str = str_to_freq_pairs str |> encode
+    let encode ps      =                          order_pairs ps |> gen_tree |> gen_encoding
+    let encode_str str = str_to_freq_pairs str |> order_pairs    |> gen_tree |> gen_encoding
 
 end
+
+open Huffman
