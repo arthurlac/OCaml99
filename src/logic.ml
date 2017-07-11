@@ -50,7 +50,6 @@ end = struct
     let simplify e = e
 
     (* TODO Benchmark set vs list impl *)
-    (* TODO Return list or set? *)
     let find_vars expr =
         let open String.Set in
         let rec aux expr vars = match expr with
@@ -60,6 +59,7 @@ end = struct
             | And _ | Or _ as x -> union (aux (fst_exn x) vars) (aux (snd_exn x) vars)
         in to_list (aux expr empty)
 
+    (* TODO Memo *)
     let gen_ctxts vars =
         let push ctxt v b = List.map ctxt ~f:(fun x -> (v, b) :: x) in
         let rec aux vs = match vs with
@@ -95,19 +95,7 @@ end
  * gray_code 1 = ["0";"1"]
  * gray_code 2 = ["00";"01";"11";"10"]
  * gray_code 3 = ["000";"001";"011";"010";"110";"111";"101";"100"]
- *
- * TODO apply result caching !!!!
-let memo f =
-  let results = Hashtbl.create 256 in
-  (fun input ->
-     match Hashtbl.find results input with
-     | None ->
-        let result = f input in
-        Hashtbl.add results ~key:input ~data:result;
-        result
-     | Some result -> result)
  *)
-(* TODO Return array? *)
 let gray_code n =
     let pref_all p l = List.map l ~f:(fun a -> p ^ a) in
     let rec aux n = match n with
@@ -117,3 +105,28 @@ let gray_code n =
             let l2 = List.rev l in
             (pref_all "0" l) @ (pref_all "1" l2)
     in aux n
+
+(* TODO, in results of n we duplciate data of results of n - 1.
+ * Can we store less in results and do some simple work to avoid storing
+ * duplicated data?
+ *
+ * TODO Benchmark and analysed word usage
+ *)
+let gray_code_fn_gen () =
+    let results = Hashtbl.create ~hashable:(Int.hashable) ?size:(Some 64) () in
+    let pref_all p l = List.map l ~f:(fun a -> p ^ a) in
+    let rec memo n =
+      match Hashtbl.find results n with
+      | Some result -> result
+      | None ->
+        let r = aux n in
+        Hashtbl.add_exn results ~key:n ~data:r;
+        r
+    and aux n =
+      match n with
+      | 1 -> ["0";"1"]
+      | _ ->
+        let l = memo (n - 1) in
+        let l2 = List.rev l in
+        (pref_all "0" l) @ (pref_all "1" l2)
+    in (fun n -> memo n)
