@@ -1,4 +1,5 @@
 open Core
+let ( |?> ) x (p, f, g) = if (p x) then (f x) else (g x);;
 
 (* Truth tables for logical expressions.
  *
@@ -15,10 +16,13 @@ module Expr : sig
         | Not   of t
         | Var   of string
         | Const of bool
+    type ctxt   = (string * bool) list
+    type result = bool
     val eval : t -> (string * bool) list -> bool
     val simplify : t -> t
     val find_vars : t -> string list
-    val gen_truth_table : t -> bool list
+    val gen_truth_table : t -> (ctxt * result) list
+    val print_truth_table : t -> unit
 end = struct
     type t =
         | And   of t * t
@@ -30,6 +34,9 @@ end = struct
         | Nor   of t * t
         | Xor   of t * t
         | Eq    of t * t *)
+
+    type ctxt   = (string * bool) list
+    type result = bool
 
     let fst e = match e with
       | And (x, _) -> Some x
@@ -83,8 +90,22 @@ end = struct
             | Const x      -> x
         in eval' expr
 
-    (* TODO Pretty print? *)
-    let gen_truth_table expr = find_vars expr |> gen_ctxts |> List.map ~f:(fun ctxt -> eval expr ctxt)
+    let ctxt_to_string = List.fold ~init:"" ~f:(fun s (v, b) -> s ^ v ^ ": " ^ Bool.to_string b ^ " ")
+
+    let gen_truth_table expr =
+      find_vars expr
+      |> gen_ctxts
+      |> List.map ~f:(fun c -> (c, eval expr c))
+
+    let print_truth_table expr =
+      find_vars expr
+      |> gen_ctxts
+      |?> ( List.is_empty
+           , (fun _ -> ["NO VARS " ^ (Bool.to_string (eval expr []))])
+           , List.map ~f:(fun c -> (ctxt_to_string c) ^"=> "^  (Bool.to_string (eval expr c)))
+           )
+      |> List.iter ~f:print_endline
+
 end
 
 (* Gray code.
