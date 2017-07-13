@@ -94,8 +94,8 @@ let prime_factor_pairs n = prime_factors n |> pack
  *)
 let int_exp x y = (float_of_int x) ** (float_of_int y) |> int_of_float
 let phi' n =
-    let phi_fn acc (p, e) = acc + (int_exp ((p - 1) * p) (e - 1)) in
-    prime_factor_pairs n |> List.fold ~init:0 ~f:phi_fn
+    let phi_fn acc (p, e) = acc * ((p - 1) * (int_exp p (e - 1))) in
+    prime_factor_pairs n |> List.fold ~init:1 ~f:phi_fn
 
 (*  Goldbach's conjecture says that every positive even number greater than 2
  *  is the sum of two prime numbers. Example: 28 = 5 + 23. It is one of the
