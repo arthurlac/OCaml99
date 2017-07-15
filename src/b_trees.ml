@@ -1,19 +1,13 @@
 (* Binary trees *)
 open Core
-open Option.Monad_infix
 
 type 'a t = Empty | Node of 'a * 'a t * 'a t
-
-(* Sample data for debugging *)
-let t1  = Node (1, Empty, Empty);;
-let t2  = Node (2, t1, t1);;
-let t3  = Node (3, t2, t2);;
-let t23 = Node (4, t2, t3);;
 
 let car   = function Empty -> None | Node (v, _, _) -> Some v
 let left  = function Empty -> None | Node (_, l, _) -> Some l
 let right = function Empty -> None | Node (_, _, r) -> Some r
 
+open Option.Monad_infix
 let lcar t = left t  >>= car
 let rcar t = right t >>= car
 
