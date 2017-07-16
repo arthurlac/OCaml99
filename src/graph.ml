@@ -1,9 +1,80 @@
-type 'a t
+open Core
+
+module type Node = sig
+    type t
+    val equal   : t -> t -> bool
+    val compare : t -> t -> int
+end
+
+module type Graph_intf = functor (N : Node) -> sig
+   type node = N.t
+   type t
+   val nodes : t -> node list
+   (*val from_edge_list : (node * node) list -> t*)
+end
+
+(* List all edges, an edge being a pair of nodes *)
+module Edge_list (N : Node) : Graph_intf = struct
+  type node = N.t
+  type t = (node * node) list
+
+  let equal = N.equal
+
+  let nodes t = List.fold t ~init:[]
+      ~f:(fun acc (x, _) -> if (List.mem acc x ~equal) then acc else x :: acc)
+
+end
+
+(* Graph term form: nodes and edges *)
+module Graph_term (N : Node) : Graph_intf = struct
+    type node = N.t
+    module El = Edge_list(N)
+    type t = { nodes : node list; edges : El.t }
+
+    let nodes t = t.nodes
+
+    let from_edge_list el =
+      let edges = El.from_edge_list el in
+      let nodes = El.nodes edges in
+      { nodes ; edges }
+end
+
+(* List of nodes and the nodes which they share an edge with *)
+module Adja_list (N : Node) : Graph_intf = struct
+    type node = N.t
+    type t = (node * node list) list
+
+    let equal = N.equal
+
+    let nodes t =
+      List.fold t ~init:[]
+        ~f:(fun acc p ->
+            let n = fst p in
+            if (List.mem acc n ~equal) then acc else n :: acc)
+
+    let from_edge_list el = el
+end
+
+(* Conversions.
+ *
+ * Write functions to convert between the different graph representations.
+ * With these functions, all representations are equivalent; i.e. for the
+ * following problems you can always pick freely the most convenient form.
+ * This problem is not particularly difficult, but it's a lot of work to
+ * deal with all the special cases. *)
 
 (* Path from one node to another one. Write a function paths g a b that returns
  * all acyclic path p from node a to node b ≠ a in the graph g.
- *)
-let path =
+ *
+let paths g a b =
+   *)
+
+
+
+
+
+
+
 
 
 (* Cycle from a given node.
