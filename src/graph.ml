@@ -2,15 +2,17 @@ open Core
 
 module type Node = sig
     type t
+    include Hashable.S with type t := t
+
     val equal   : t -> t -> bool
     val compare : t -> t -> int
 end
 
-module type Graph_intf = functor (N : Node) -> sig
-   type node = N.t
+module type Graph_intf = sig
    type t
+   type node
    val nodes : t -> node list
-   (*val from_edge_list : (node * node) list -> t*)
+   val from_edge_list : (node * node) list -> t
 end
 
 (* List all edges, an edge being a pair of nodes *)
@@ -23,12 +25,13 @@ module Edge_list (N : Node) : Graph_intf = struct
   let nodes t = List.fold t ~init:[]
       ~f:(fun acc (x, _) -> if (List.mem acc x ~equal) then acc else x :: acc)
 
+  let from_edge_list el = el
 end
 
 (* Graph term form: nodes and edges *)
 module Graph_term (N : Node) : Graph_intf = struct
-    type node = N.t
     module El = Edge_list(N)
+    type node = El.node
     type t = { nodes : node list; edges : El.t }
 
     let nodes t = t.nodes
@@ -40,21 +43,27 @@ module Graph_term (N : Node) : Graph_intf = struct
 end
 
 (* List of nodes and the nodes which they share an edge with *)
-module Adja_list (N : Node) : Graph_intf = struct
+module Adjc_list (N : Node) : Graph_intf = struct
     type node = N.t
-    type t = (node * node list) list
+    type t = (node, node list) Hashtbl.t
 
     let equal = N.equal
 
-    let nodes t =
-      List.fold t ~init:[]
-        ~f:(fun acc p ->
-            let n = fst p in
-            if (List.mem acc n ~equal) then acc else n :: acc)
+    let nodes = Hashtbl.keys
 
-    let from_edge_list el = el
+    let from_edge_list el =
+      let tbl = Hashtbl.create ~hashable:(N.hashable) () in
+      List.iter el ~f:(fun (x, y) ->
+          let neighbours = match Hashtbl.find tbl x with
+          | None -> []
+          | Some l -> l
+          in Hashtbl.set tbl ~key:x ~data:(y :: neighbours)
+        );
+      tbl
+
 end
 
+(*
 (* Conversions.
  *
  * Write functions to convert between the different graph representations.
@@ -118,4 +127,5 @@ let paths g a b =
  * In a K-regular graph all nodes have a degree of K; i.e. the number of edges
  * incident in each node is K. How many (non-isomorphic!) 3-regular graphs with 6
  * nodes are there?
+ *)
  *)
