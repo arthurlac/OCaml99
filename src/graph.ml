@@ -11,7 +11,11 @@ end
 module type Graph_intf = sig
    type t
    type node
+
    val nodes : t -> node list
+
+   val to_edge_list   : t -> (node * node) list
+
    val from_edge_list : (node * node) list -> t
 end
 
@@ -26,6 +30,7 @@ module Edge_list (N : Node) : Graph_intf = struct
       ~f:(fun acc (x, _) -> if (List.mem acc x ~equal) then acc else x :: acc)
 
   let from_edge_list el = el
+  let to_edge_list el = el
 end
 
 (* Graph term form: nodes and edges *)
@@ -40,14 +45,14 @@ module Graph_term (N : Node) : Graph_intf = struct
       let edges = El.from_edge_list el in
       let nodes = El.nodes edges in
       { nodes ; edges }
+
+    let to_edge_list t = El.to_edge_list t.edges
 end
 
 (* List of nodes and the nodes which they share an edge with *)
 module Adjc_list (N : Node) : Graph_intf = struct
     type node = N.t
     type t = (node, node list) Hashtbl.t
-
-    let equal = N.equal
 
     let nodes = Hashtbl.keys
 
@@ -61,29 +66,30 @@ module Adjc_list (N : Node) : Graph_intf = struct
         );
       tbl
 
+    let to_edge_list t =
+      Hashtbl.fold ~init:[] ~f:(fun ~key ~data acc ->
+        List.fold data ~init:acc ~f(fun acc x ->
+            if List.mem ~equal:(=) acc (key, x) then acc else (x, key) :: acc))
+
 end
 
-(*
 (* Conversions.
  *
  * Write functions to convert between the different graph representations.
  * With these functions, all representations are equivalent; i.e. for the
  * following problems you can always pick freely the most convenient form.
  * This problem is not particularly difficult, but it's a lot of work to
- * deal with all the special cases. *)
+ * deal with all the special cases.
+ *
+ * Solution : use (to|from)_edge_list for each type
+ *)
 
 (* Path from one node to another one. Write a function paths g a b that returns
  * all acyclic path p from node a to node b ≠ a in the graph g.
  *
 let paths g a b =
    *)
-
-
-
-
-
-
-
+(*
 
 
 (* Cycle from a given node.
