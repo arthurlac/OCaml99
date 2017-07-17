@@ -50,7 +50,10 @@ module Graph_term (N : Node) : Graph_intf = struct
 end
 
 (* List of nodes and the nodes which they share an edge with *)
-module Adjc_list (N : Node) : Graph_intf = struct
+module Adjc_list (N : Node) : sig
+  include Graph_intf
+
+end = struct
     type node = N.t
     type t = (node, node list) Hashtbl.t
 
@@ -66,10 +69,20 @@ module Adjc_list (N : Node) : Graph_intf = struct
         );
       tbl
 
+    let pair_eq (a, b) (c, d) =
+      if a = c && b = d then true else
+      if a = d && b = c then true else false
+
     let to_edge_list t =
-      Hashtbl.fold ~init:[] ~f:(fun ~key ~data acc ->
-        List.fold data ~init:acc ~f(fun acc x ->
-            if List.mem ~equal:(=) acc (key, x) then acc else (x, key) :: acc))
+      (* for each node find its edges *)
+      Hashtbl.fold t ~init:[] ~f:(fun ~key ~data acc ->
+        (* add NEW edges to acc *)
+        List.fold data ~init:acc ~f:(fun acc x ->
+            if List.mem ~equal:pair_eq acc (key, x)
+            then acc
+            else (x, key) :: acc
+            )
+        )
 
 end
 
