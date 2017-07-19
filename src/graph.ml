@@ -1,5 +1,16 @@
 open Core
 
+(* Usage
+  module G = Adjc_list(Int);;
+  let g' = G.from_edge_list [1,2; 2,3; 2,4; 5,6];;
+  G.nodes g';;
+  - : int list = [6; 5; 4; 3; 2; 1]
+  G.path g' 3 2;;
+  - : bool = true
+  G.path g' 3 5;;
+  - : bool = false
+*)
+
 module type Node = sig
     type t
     include Hashable.S with type t := t
@@ -39,14 +50,30 @@ module Graph_term (N : Node) = struct
 end
 
 (* List of nodes and the nodes which they share an edge with *)
-module Adjc_list (N : Node) (*: sig
+module Adjc_list (N : Node) : sig
   type node = N.t
   type t
+
   val nodes : t -> node list
   val from_edge_list : (node * node) list -> t
   val to_edge_list : t -> (node * node) list
-  val path : t -> node -> node -> bool
-end *)= struct
+
+  val is_connected : t -> node -> node -> bool
+  val path         : t -> node -> node -> node list option
+
+  val cycle : t -> node -> node -> node list option
+
+  val degree : t -> node -> int option
+
+  val dfs_traverse : t -> node -> node -> node list option
+
+  val split_unconnected : t -> t list
+
+  val is_bipartite : t -> node -> bool
+
+  val gen_reg : int -> t
+
+end = struct
     type node = N.t
     type t = (node, node list) Hashtbl.t
 
@@ -56,7 +83,7 @@ end *)= struct
 
     let from_edge_list el =
       let tbl = Hashtbl.create ~hashable:(N.hashable) () in
-      (* TODO Comm *)
+      (* TODO Comm *) (* TODO Adapt for directed graph *)
       let add_edge f t = (* f : from , t : to *)
           let neighbours = match Hashtbl.find tbl f with
             | None -> [] | Some l -> l
@@ -111,15 +138,20 @@ end *)= struct
                 ~f:(fun _ n -> bfs v' p' n)
       in try bfs [] [] origin with Ret a -> a
 
-end
+    let cycle g n = failwith "uninmplemented"
 
-(* Usage
-  module G = Adjc_list(Int);;
-  let g' = G.from_edge_list [1,2; 2,3; 2,4; 5,6];;
-  G.nodes g';;
-  - : int list = [6; 5; 4; 3; 2; 1]
-  G.path g' 3 2;;
-  - : bool = true
-  G.path g' 3 5;;
-  - : bool = false
-*)
+    let degree g n =
+      if not (Hashtbl.mem g n) then None else
+        match Hashtbl.find g n with
+        | None -> Some 0
+        | Some ns -> Some (List.length ns)
+
+    let dfs_traverse g n = failwith "uninmplemented"
+
+    let split_unconnected g = failwith "uninmplemented"
+
+    let is_bipartite g n = failwith "uninmplemented"
+
+    let gen_reg k = failwith "uninmplemented"
+
+end
