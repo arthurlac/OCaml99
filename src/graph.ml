@@ -63,9 +63,15 @@ module Adjc_list (N : Node) : sig
 
   val cycle : t -> node -> node -> node list option
 
-  val degree : t -> node -> int option
+  val s_tree : t -> node list
+  (* val mst : t -> *)
 
-  val dfs_traverse : t -> node -> node -> node list option
+  val isomorphism : t -> t -> bool
+
+  val degree       : t -> node -> int option
+  val node_degrees : t -> int list
+
+  val dfs_traverse : t -> node -> node list option
 
   val split_unconnected : t -> t list
 
@@ -140,11 +146,22 @@ end = struct
 
     let cycle g n = failwith "uninmplemented"
 
+    let s_tree g = failwith "uninmplemented"
+
+    let isomorphism g h = failwith "unimplemented"
+
     let degree g n =
       if not (Hashtbl.mem g n) then None else
         match Hashtbl.find g n with
         | None -> Some 0
         | Some ns -> Some (List.length ns)
+
+    let node_degrees g = nodes g
+      |> List.map ~f:(fun n -> degree g n)
+      |> List.fold ~init:[] ~f:(fun acc d_o ->
+          match d_o with
+          | Some d -> (d :: acc)
+          | None -> assert false)
 
     let dfs_traverse g n = failwith "uninmplemented"
 
