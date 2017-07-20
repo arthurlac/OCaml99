@@ -167,6 +167,7 @@ end = struct
           | Some d -> (d :: acc)
           | None -> assert false)
 
+    (* TODO See if better can be done. Feel like better is possible *)
     let dfs_traverse g origin target =
       (* Set up a stack to hold nodes to visit *)
       let stack = Stack.create () in
@@ -192,16 +193,38 @@ end = struct
               | Some n -> dfs v' p' n
       in dfs [] [] origin
 
-    let split_unconnected g = failwith "Bad"
-    (*
-    let split_unconnected g = (*failwith "Bad" *)
-      let rec aux = nodes g |> List.fold ~init:[] ~f:(fun acc n ->
+    (* Could short circuit, less terse *)
+    let known sets n = List.fold ~init:false ~f:(fun k s -> Set.mem s n || k)
+
+    (*let split_unconnected g = failwith "Bad"*)
+    let split_unconnected g =
+      (* Try to place node in a set or create new set *)
+      let rec aux sets node =
+        if known sets n then acc else (* find_set_or_create sets n *)
+          (* If we don't know it then look at neighbours
+           * and match neighbours to known sets. Make sure to look at all
+           * neighbours and merge sets when ness.
+           *)
           match Hashtbl.find g n with
-          | None -> acc
-          | Some ns -> List.fold ~init ~f:(fun acc x ->
-              if nodes_mem seen n then next else
-              if Set.mem n
-*)
+          (* This case only possible in directed graph *)
+          | None -> assert fals
+          | Some ns ->
+            List.fold ~init ~f:(fun acc x ->
+              if
+
+      in nodes g |> List.fold ~init:[] ~f:aux |> reconnect_sets
+
+
+
+
+
+
+
+
+
+
+
+
 
     let is_bipartite g n = failwith "uninmplemented"
 
