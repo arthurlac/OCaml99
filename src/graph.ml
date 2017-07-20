@@ -54,9 +54,11 @@ module Adjc_list (N : Node) : sig
   type node = N.t
   type t
 
-  val nodes : t -> node list
+  val nodes      : t -> node list
+  val neighbours : t -> node -> node list option
+
   val from_edge_list : (node * node) list -> t
-  val to_edge_list : t -> (node * node) list
+  val to_edge_list   : t -> (node * node) list
 
   val is_connected : t -> node -> node -> bool
   val path         : t -> node -> node -> node list option
@@ -64,14 +66,14 @@ module Adjc_list (N : Node) : sig
   val cycle : t -> node -> node -> node list option
 
   val s_tree : t -> node list
-  (* val mst : t -> *)
+  val mst    : t -> node list
 
   val isomorphism : t -> t -> bool
 
   val degree       : t -> node -> int option
   val node_degrees : t -> int list
 
-  val dfs_traverse : t -> node -> node list option
+  val dfs_traverse : t -> node -> node -> node list option
 
   val split_unconnected : t -> t list
 
@@ -83,7 +85,10 @@ end = struct
     type node = N.t
     type t = (node, node list) Hashtbl.t
 
-    let nodes = Hashtbl.keys
+    exception Ret of (node list option)
+
+    let nodes          = Hashtbl.keys
+    let neighbours g n = Hashtbl.find g n
 
     let nodes_mem l n = List.mem ~equal:(N.equal) l n
 
@@ -127,8 +132,6 @@ end = struct
                 ~f:(fun acc n -> (bfs v' n) || acc)
       in bfs [] origin
 
-    exception Ret of node list option
-
     let path g origin target =
       let rec bfs visited path curn =
         if nodes_mem visited curn then None else
@@ -147,6 +150,7 @@ end = struct
     let cycle g n = failwith "uninmplemented"
 
     let s_tree g = failwith "uninmplemented"
+    let mst g = failwith "uninmplemented"
 
     let isomorphism g h = failwith "unimplemented"
 
@@ -163,9 +167,41 @@ end = struct
           | Some d -> (d :: acc)
           | None -> assert false)
 
-    let dfs_traverse g n = failwith "uninmplemented"
+    let dfs_traverse g origin target =
+      (* Set up a stack to hold nodes to visit *)
+      let stack = Stack.create () in
+      let _ = Stack.push stack origin in
+      (* Recurse on that stack *)
+      let rec dfs visited path curn =
+        if nodes_mem visited curn then
+          match Stack.pop stack with
+          | None -> None
+          | Some n -> dfs visited path n
+        else match Hashtbl.find g curn with
+          | None -> None
+          | Some ns ->
+            let p' = curn :: path in
+            if nodes_mem ns target then
+              Some (List.rev (target :: p'))
+            else
+              let _ = Stack.pop stack in
+              let _ = List.iter ns ~f:(fun n -> Stack.push stack n) in
+              let v' = curn :: visited in
+              match Stack.pop stack with
+              | None -> None
+              | Some n -> dfs v' p' n
+      in dfs [] [] origin
 
-    let split_unconnected g = failwith "uninmplemented"
+    let split_unconnected g = failwith "Bad"
+    (*
+    let split_unconnected g = (*failwith "Bad" *)
+      let rec aux = nodes g |> List.fold ~init:[] ~f:(fun acc n ->
+          match Hashtbl.find g n with
+          | None -> acc
+          | Some ns -> List.fold ~init ~f:(fun acc x ->
+              if nodes_mem seen n then next else
+              if Set.mem n
+*)
 
     let is_bipartite g n = failwith "uninmplemented"
 
