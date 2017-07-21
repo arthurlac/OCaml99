@@ -174,23 +174,22 @@ end = struct
       let _ = Stack.push stack origin in
       (* Recurse on that stack *)
       let rec dfs visited path curn =
-        if nodes_mem visited curn then
-          match Stack.pop stack with
-          | None -> None
-          | Some n -> dfs visited path n
+        if nodes_mem visited curn
+        then vis_next visited path
         else match Hashtbl.find g curn with
-          | None -> None
+          | None -> None (* Deadend *)
           | Some ns ->
             let p' = curn :: path in
-            if nodes_mem ns target then
-              Some (List.rev (target :: p'))
-            else
+            (* Find target or move thru stack *)
+            if nodes_mem ns target then Some (List.rev (target :: p')) else
               let _ = Stack.pop stack in
               let _ = List.iter ns ~f:(fun n -> Stack.push stack n) in
               let v' = curn :: visited in
-              match Stack.pop stack with
-              | None -> None
-              | Some n -> dfs v' p' n
+              vis_next v' p'
+      and vis_next visited path =
+        match Stack.pop stack with
+        | None -> None
+        | Some n -> dfs visited path n
       in dfs [] [] origin
 
     (* Could short circuit, less terse *)
@@ -213,18 +212,6 @@ end = struct
               if
 
       in nodes g |> List.fold ~init:[] ~f:aux |> reconnect_sets
-
-
-
-
-
-
-
-
-
-
-
-
 
     let is_bipartite g n = failwith "uninmplemented"
 
