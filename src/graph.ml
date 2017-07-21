@@ -63,7 +63,7 @@ module Adjc_list (N : Node) : sig
   val is_connected : t -> node -> node -> bool
   val path         : t -> node -> node -> node list option
 
-  val cycle : t -> node -> node -> node list option
+  val cycle : t -> node -> bool
 
   val s_tree : t -> node list
   val mst    : t -> node list
@@ -147,7 +147,18 @@ end = struct
                 ~f:(fun _ n -> bfs v' p' n)
       in try bfs [] [] origin with Ret a -> a
 
-    let cycle g n = failwith "uninmplemented"
+    let cycle g n =
+      let rec aux visited to_visit =
+        match to_visit with
+        | [] -> false
+        | curn :: t_v' ->
+          if nodes_mem visited curn then true else
+            let v' = curn :: visited in
+            match Hashtbl.find g curn with
+            | None -> aux v' t_v'
+            | Some ns -> aux v' (t_v' @ ns)
+      in aux [] [n]
+
 
     let s_tree g = failwith "uninmplemented"
     let mst g = failwith "uninmplemented"
