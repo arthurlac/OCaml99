@@ -149,6 +149,9 @@ end = struct
 
     (* NOTE THIS ONLY WORKS FOR DIRECTED GRAPHS *)
     (* WHICH ARE NYI.... :/ *)
+    (* For undirected graph need 2 mark forward/backward edges
+     * where backwards edges indicate a cycle
+     *)
     let node_cycle g n =
       let rec aux visited to_visit =
         match to_visit with
@@ -161,11 +164,7 @@ end = struct
             | Some ns -> aux v' (t_v' @ ns)
       in aux [] [n]
 
-    (* TODO SHort circuit ver *)
-    let cycle g =
-      nodes g
-      |> List.fold ~init:false ~f:(fun acc n -> node_cycle g n || acc)
-
+    let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
     let s_tree g = failwith "uninmplemented"
     let mst g = failwith "uninmplemented"
@@ -211,7 +210,7 @@ end = struct
       in dfs [] [] origin
 
     (* Could short circuit, less terse *)
-    let known sets n = List.fold ~init:false ~f:(fun k s -> Set.mem s n || k)
+    let known sets n = List.exists ~f:(fun s -> Set.mem s n)
 
     (*let split_unconnected g = failwith "Bad"*)
     let split_unconnected g =
