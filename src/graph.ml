@@ -147,7 +147,9 @@ end = struct
                 ~f:(fun _ n -> bfs v' p' n)
       in try bfs [] [] origin with Ret a -> a
 
-    let cycle g n =
+    (* NOTE THIS ONLY WORKS FOR DIRECTED GRAPHS *)
+    (* WHICH ARE NYI.... :/ *)
+    let node_cycle g n =
       let rec aux visited to_visit =
         match to_visit with
         | [] -> false
@@ -158,6 +160,11 @@ end = struct
             | None -> aux v' t_v'
             | Some ns -> aux v' (t_v' @ ns)
       in aux [] [n]
+
+    (* TODO SHort circuit ver *)
+    let cycle g =
+      nodes g
+      |> List.fold ~init:false ~f:(fun acc n -> node_cycle g n || acc)
 
 
     let s_tree g = failwith "uninmplemented"
