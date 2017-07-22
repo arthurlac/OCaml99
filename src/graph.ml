@@ -147,50 +147,56 @@ end = struct
                 ~f:(fun _ n -> bfs v' p' n)
       in try bfs [] [] origin with Ret a -> a
 
-    (* NOTE THIS ONLY WORKS FOR DIRECTED GRAPHS *)
-    (* WHICH ARE NYI.... :/ *)
-    (* For undirected graph need 2 mark forward/backward edges
-     * where backwards edges indicate a cycle
-     *)
+    (* Okay this is wrong, back edge goes to visited known via an UNKNWON edge *)
+    (* THis doesn;t work *)
     let node_cycle g n =
-      let rec aux visited to_visit =
+      let edges_of_nodes node =
+        match Hashtbl.find g node with
+        | None -> []
+        | Some ns -> List.map ns ~f:(fun n -> (node, n)) in
+      let is_back_edge edges known =
+        (* Check to see if we are going back on a known edge *)
+        List.fold edges ~init:false ~f:(
+          fun acc e -> List.exists ~f:(
+              fun k_e -> pair_eq e k_e) || acc) in
+      let rec aux edges_known to_visit =
         match to_visit with
         | [] -> false
         | curn :: t_v' ->
-          if nodes_mem visited curn then true else
-            let v' = curn :: visited in
+          let new_edges = edges_of_node curn in
+          if is_back_edge new_edges edges_known then true else
+            let e' = new_edges @ edges_known in
             match Hashtbl.find g curn with
-            | None -> aux v' t_v'
-            | Some ns -> aux v' (t_v' @ ns)
+            | None -> aux e' t_v'
+            | Some ns -> aux e' (t_v' @ ns)
       in aux [] [n]
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
     let s_tree g = failwith "uninmplemented"
+
     let mst g = failwith "uninmplemented"
 
     let isomorphism g h = failwith "unimplemented"
 
-    let degree g n =
-      if not (Hashtbl.mem g n) then None else
-        match Hashtbl.find g n with
-        | None -> Some 0
-        | Some ns -> Some (List.length ns)
+    let degree g n = match Hashtbl.find g n with
+      | None -> None
+      | Some ns -> Some (List.length ns)
 
     let node_degrees g = nodes g
       |> List.map ~f:(fun n -> degree g n)
-      |> List.fold ~init:[] ~f:(fun acc d_o ->
-          match d_o with
+      |> List.fold ~init:[] ~f:(fun acc n_d ->
+          match n_d with
           | Some d -> (d :: acc)
           | None -> assert false)
 
     (* TODO See if better can be done. Feel like better is possible *)
-    let dfs_traverse g origin target =
+    let dfs g origin target =
       (* Set up a stack to hold nodes to visit *)
       let stack = Stack.create () in
       let _ = Stack.push stack origin in
       (* Recurse on that stack *)
-      let rec dfs visited path curn =
+      let rec search visited path curn =
         if nodes_mem visited curn
         then vis_next visited path
         else match Hashtbl.find g curn with
@@ -206,13 +212,12 @@ end = struct
       and vis_next visited path =
         match Stack.pop stack with
         | None -> None
-        | Some n -> dfs visited path n
-      in dfs [] [] origin
+        | Some n -> search visited path n
+      in search [] [] origin
 
     (* Could short circuit, less terse *)
     let known sets n = List.exists ~f:(fun s -> Set.mem s n)
 
-    (*let split_unconnected g = failwith "Bad"*)
     let split_unconnected g =
       (* Try to place node in a set or create new set *)
       let rec aux sets node =
