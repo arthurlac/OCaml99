@@ -147,29 +147,30 @@ end = struct
                 ~f:(fun _ n -> bfs v' p' n)
       in try bfs [] [] origin with Ret a -> a
 
-    (* Okay this is wrong, back edge goes to visited known via an UNKNWON edge *)
-    (* THis doesn;t work *)
-    let node_cycle g n =
-      let edges_of_nodes node =
-        match Hashtbl.find g node with
-        | None -> []
-        | Some ns -> List.map ns ~f:(fun n -> (node, n)) in
-      let is_back_edge edges known =
-        (* Check to see if we are going back on a known edge *)
-        List.fold edges ~init:false ~f:(
-          fun acc e -> List.exists ~f:(
-              fun k_e -> pair_eq e k_e) || acc) in
-      let rec aux edges_known to_visit =
-        match to_visit with
-        | [] -> false
-        | curn :: t_v' ->
-          let new_edges = edges_of_node curn in
-          if is_back_edge new_edges edges_known then true else
-            let e' = new_edges @ edges_known in
-            match Hashtbl.find g curn with
-            | None -> aux e' t_v'
-            | Some ns -> aux e' (t_v' @ ns)
-      in aux [] [n]
+    (* For a cycle we need to rediscover a node via a new edge *)
+    let node_cycle g origin =
+      let merge a b ~compare =
+        a @ b |> List.dedup ~compare in
+      let make_edges node neighbours =
+        List.map neighbours ~f:(fun n -> (node, n)) in
+      let is_back_edge curn curn_neighbours edges_known visited =
+        (* See if we are revisiting a node *)
+        if List.exists curn_neighbours ~f:(fun n -> nodes_mem visited n)
+        (* If we are check it's not via a known edge *)
+        then List.exists curn_neighbours ~f:(fun n ->
+            not List.mem edges_known (curn, n) ~equal:pair_eq)
+        else false in
+      let rec aux visited_nodes edges_known to_visit =
+        match to_visit with [] -> false | curn :: t_v' ->
+          let ns = match Hashtbl.find g curn with
+            | None -> []
+            | Some ns -> ns in
+          if is_back_edge edges_known then true
+          else aux
+              (merge ns visited_nodes)
+              (merge edges_known (make_edges curn ns))
+              (merge to_visit ns)
+      in aux [] [] [origin]
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
@@ -190,7 +191,6 @@ end = struct
           | Some d -> (d :: acc)
           | None -> assert false)
 
-    (* TODO See if better can be done. Feel like better is possible *)
     let dfs g origin target =
       (* Set up a stack to hold nodes to visit *)
       let stack = Stack.create () in
@@ -204,11 +204,13 @@ end = struct
           | Some ns ->
             let p' = curn :: path in
             (* Find target or move thru stack *)
-            if nodes_mem ns target then Some (List.rev (target :: p')) else
-              let _ = Stack.pop stack in
-              let _ = List.iter ns ~f:(fun n -> Stack.push stack n) in
+            if nodes_mem ns target then Some (List.rev (target :: p'))
+            else begin
+              Stack.pop stack;
+              List.iter ns ~f:(fun n -> Stack.push stack n);
               let v' = curn :: visited in
               vis_next v' p'
+            end
       and vis_next visited path =
         match Stack.pop stack with
         | None -> None
