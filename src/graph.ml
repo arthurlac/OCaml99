@@ -178,16 +178,22 @@ end = struct
 
     let mst g = failwith "uninmplemented"
 
-    let isomorphism g h = failwith "unimplemented"
+    let isomorphism g h = failwith "uninmplemented" (*
+      let g_n = nodes g in
+      let h_n = nodes h in
+      let open Hashtbl in
+      (* find a mismatch *)
+      let aux () =  not List.exists2 g_n h_n ~f:(fun gx hx ->
+          let gxn, hxn = find_exn g gx, find_exn h hx =
+      ) in try aux () with Invalid_argument _ -> false *)
 
     let degree g n = match Hashtbl.find g n with
       | None -> None
       | Some ns -> Some (List.length ns)
 
-    let node_degrees g = nodes g
-      |> List.map ~f:(fun n -> degree g n)
-      |> List.fold ~init:[] ~f:(fun acc n_d ->
-          match n_d with
+    let node_degrees g = 
+      nodes g |> List.map ~f:(fun n ->
+          match degree g n with
           | Some d -> (d :: acc)
           | None -> assert false)
 
