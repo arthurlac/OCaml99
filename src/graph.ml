@@ -119,7 +119,6 @@ end = struct
             )
         )
 
-    (* TODO Clean *) (* TODO Review *)
     let is_connected g origin target =
       let rec bfs visited curn =
         if nodes_mem visited curn then false else
@@ -158,18 +157,19 @@ end = struct
         if List.exists curn_neighbours ~f:(fun n -> nodes_mem visited n)
         (* If we are check it's not via a known edge *)
         then List.exists curn_neighbours ~f:(fun n ->
-            not List.mem edges_known (curn, n) ~equal:pair_eq)
+            not (List.mem edges_known (curn, n) ~equal:pair_eq))
         else false in
       let rec aux visited_nodes edges_known to_visit =
         match to_visit with [] -> false | curn :: t_v' ->
           let ns = match Hashtbl.find g curn with
             | None -> []
             | Some ns -> ns in
-          if is_back_edge edges_known then true
+          if is_back_edge curn ns edges_known visited_nodes
+          then true
           else aux
-              (merge ns visited_nodes)
-              (merge edges_known (make_edges curn ns))
-              (merge to_visit ns)
+              (merge ns visited_nodes ~compare:N.compare)
+              (merge edges_known (make_edges curn ns) ~compare:(fun a b -> pair_eq a b |> Bool.to_int))
+              (merge to_visit ns ~compare:N.compare )
       in aux [] [] [origin]
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
@@ -193,9 +193,7 @@ end = struct
 
     let node_degrees g = 
       nodes g |> List.map ~f:(fun n ->
-          match degree g n with
-          | Some d -> (d :: acc)
-          | None -> assert false)
+          match degree g n with Some d -> d | None -> assert false)
 
     let dfs g origin target =
       (* Set up a stack to hold nodes to visit *)
@@ -212,7 +210,7 @@ end = struct
             (* Find target or move thru stack *)
             if nodes_mem ns target then Some (List.rev (target :: p'))
             else begin
-              Stack.pop stack;
+              let _ = Stack.pop stack in
               List.iter ns ~f:(fun n -> Stack.push stack n);
               let v' = curn :: visited in
               vis_next v' p'
@@ -223,25 +221,39 @@ end = struct
         | Some n -> search visited path n
       in search [] [] origin
 
-    (* Could short circuit, less terse *)
     let known sets n = List.exists ~f:(fun s -> Set.mem s n)
 
     let split_unconnected g =
       (* Try to place node in a set or create new set *)
-      let rec aux sets node =
-        if known sets n then acc else (* find_set_or_create sets n *)
-          (* If we don't know it then look at neighbours
-           * and match neighbours to known sets. Make sure to look at all
-           * neighbours and merge sets when ness.
-           *)
-          match Hashtbl.find g n with
-          (* This case only possible in directed graph *)
-          | None -> assert fals
-          | Some ns ->
-            List.fold ~init ~f:(fun acc x ->
-              if
+      let set_add_list s l =
+        List.fold (n :: ns) ~init:s ~f:(fun s nd -> Set.add s nd)
+      in
+      let new_set_from_list sets l =
+        let s = Set.empty ~comparator:N.comparator in
+        let new_set = set_add_list s l in
+        new_set :: sets
+      in
+      (* When we add new nodes to a set it may cause them to
+       * link to each other thus we should merge them. *)
+      (* This is O(n^2) only run when sets r modified. I.e. case 1/2 *)
+      let coalsce sets = List.fold sets ~init:[] ~f:(fun acc s ->
+        List.fold sets ~init:sets ~f:(fun sets sx ->
+          if empty_intersect s sx then sx else merge s sx
 
-      in nodes g |> List.fold ~init:[] ~f:aux |> reconnect_sets
+      in
+      let rec aux sets n =
+        let ns = Hashtbl.find_exn g n in
+        match which sets n with
+        (* Case 0: Node is in known set. Push neighbours and coalesce new connections. *)
+        | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
+        | None ->
+          match exists ns ~f:(fun n -> known sets n) with
+          (* Case 1: Node neighbour is in known set *)
+          (* TODO explain why we can recur *)
+          | Some neighbour -> aux sets neighbour
+          (* Case 2: Node and neighbours are not in any set already, create new set *)
+          | None -> (new_set_from_list (n :: ns) ) :: sets
+      in nodes g |> List.fold ~init:[] ~f:aux
 
     let is_bipartite g n = failwith "uninmplemented"
 
