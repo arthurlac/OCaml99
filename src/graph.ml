@@ -241,16 +241,37 @@ end = struct
           if empty_intersect s sx then sx else merge s sx
 
       in
+      let which node sets =
+        (* Return S::R or None where S is the set containing node and R is the other sets *)
+        let rec aux s acc = match s with
+          | [] -> None
+          | s' :: r -> if Set.mem s node
+            then Some (s' :: (r @ acc))
+            else aux r (s' :: acc)
+        in aux sets []
+      in
+      let exists nodes sets =
+        let rec aux ns = match ns with
+          | [] -> None
+          | n :: r -> match which n sets with
+            | None -> aux r
+            | Some x -> Some x
+        in aux nodes
+      in
       let rec aux sets n =
+        (* Find neighbours, exn as we only come from known nodes *)
         let ns = Hashtbl.find_exn g n in
-        match which sets n with
-        (* Case 0: Node is in known set. Push neighbours and coalesce new connections. *)
+        match which n sets with
+        (* Case 0: Node is in known set. Push neighbours and coalesce *)
+        (* new connections may result from adding neighbours. *)
         | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
+        | Some [] -> assert false (* Can only find matching set if it has > 1 elt *)
         | None ->
-          match exists ns ~f:(fun n -> known sets n) with
+          match exists ns sets with
           (* Case 1: Node neighbour is in known set *)
-          (* TODO explain why we can recur *)
-          | Some neighbour -> aux sets neighbour
+          (* TODO We can recur with the neighbour as the node in case 0 *)
+          | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
+          (* | Some neighbour -> aux sets neighbour *)
           (* Case 2: Node and neighbours are not in any set already, create new set *)
           | None -> (new_set_from_list (n :: ns) ) :: sets
       in nodes g |> List.fold ~init:[] ~f:aux
