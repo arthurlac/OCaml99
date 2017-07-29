@@ -63,7 +63,9 @@ module Adjc_list (N : Node) : sig
   val is_connected : t -> node -> node -> bool
   val path         : t -> node -> node -> node list option
 
-  val cycle : t -> node -> bool
+  val node_cycle : t -> node -> bool
+
+  val cycle : t -> bool
 
   val s_tree : t -> node list
   val mst    : t -> node list
@@ -71,7 +73,6 @@ module Adjc_list (N : Node) : sig
   val isomorphism : t -> t -> bool
 
   val degree       : t -> node -> int option
-  val node_degrees : t -> int list
 
   val dfs_traverse : t -> node -> node -> node list option
 
@@ -132,6 +133,7 @@ end = struct
       in bfs [] origin
 
     let path g origin target =
+      (* TODO Handle cycles *)
       let rec bfs visited path curn =
         if nodes_mem visited curn then None else
         match Hashtbl.find g curn with
@@ -148,17 +150,19 @@ end = struct
 
     (* For a cycle we need to rediscover a node via a new edge *)
     let node_cycle g origin =
-      let merge a b ~compare =
-        a @ b |> List.dedup ~compare in
+      (* TOOD Dedup *)
+      let merge a b = a @ b in
       let make_edges node neighbours =
-        List.map neighbours ~f:(fun n -> (node, n)) in
+        List.map neighbours ~f:(fun n -> (node, n))
+      in
       let is_back_edge curn curn_neighbours edges_known visited =
         (* See if we are revisiting a node *)
         if List.exists curn_neighbours ~f:(fun n -> nodes_mem visited n)
         (* If we are check it's not via a known edge *)
         then List.exists curn_neighbours ~f:(fun n ->
             not (List.mem edges_known (curn, n) ~equal:pair_eq))
-        else false in
+        else false
+      in
       let rec aux visited_nodes edges_known to_visit =
         match to_visit with [] -> false | curn :: t_v' ->
           let ns = match Hashtbl.find g curn with
@@ -174,26 +178,33 @@ end = struct
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
-    let s_tree g = failwith "uninmplemented"
+    let s_tree g = (* BFS ? *)
+      let rec bfs visited tree curn =
+        if nodes_mem visited curn
+        then vis_next
+        else match Hashtbl.find g curn with
+          | None -> None
+          | Some nodes ->
+            let t' = curn :: tree in
+            let v' = curn :: visited in
+            List.fold nodes ~init:None
+              ~f:(fun _ n -> bfs v' p' n)
+      in try bfs [] [] origin with Ret a -> a
 
     let mst g = failwith "uninmplemented"
 
-    let isomorphism g h = failwith "uninmplemented" (*
+    let isomorphism g h =
       let g_n = nodes g in
       let h_n = nodes h in
       let open Hashtbl in
       (* find a mismatch *)
       let aux () =  not List.exists2 g_n h_n ~f:(fun gx hx ->
           let gxn, hxn = find_exn g gx, find_exn h hx =
-      ) in try aux () with Invalid_argument _ -> false *)
+      ) in try aux () with Invalid_argument _ -> false
 
     let degree g n = match Hashtbl.find g n with
       | None -> None
       | Some ns -> Some (List.length ns)
-
-    let node_degrees g = 
-      nodes g |> List.map ~f:(fun n ->
-          match degree g n with Some d -> d | None -> assert false)
 
     let dfs g origin target =
       (* Set up a stack to hold nodes to visit *)
@@ -204,7 +215,7 @@ end = struct
         if nodes_mem visited curn
         then vis_next visited path
         else match Hashtbl.find g curn with
-          | None -> None (* Deadend *)
+          | None -> vis_next visited path
           | Some ns ->
             let p' = curn :: path in
             (* Find target or move thru stack *)
@@ -223,40 +234,47 @@ end = struct
 
     let known sets n = List.exists ~f:(fun s -> Set.mem s n)
 
+    (* Finds membership of node in sets
+     * Return None
+     * or Some S::R
+     *   where S is the set containing node
+     *   and R is the other sets.
+     * *)
+    let which node sets =
+      let rec aux sl acc = match sl with
+        | [] -> None
+        | s' :: r -> if Set.mem s' node
+          then Some (s' :: (r @ acc))
+          else aux r (s' :: acc)
+      in aux sets []
+
+    (* Finds membership of nodes in sets
+     * same return as which *)
+    let which_of_many nodes sets =
+      let rec aux ns = match ns with
+        | [] -> None
+        | n :: r -> match which n sets with
+          | None -> aux r
+          | Some x -> Some x
+      in aux nodes
+    in
+
     let split_unconnected g =
-      (* Try to place node in a set or create new set *)
       let set_add_list s l =
-        List.fold (n :: ns) ~init:s ~f:(fun s nd -> Set.add s nd)
+        List.fold l ~init:s ~f:(fun s nd -> Set.add s nd)
       in
       let new_set_from_list sets l =
         let s = Set.empty ~comparator:N.comparator in
         let new_set = set_add_list s l in
         new_set :: sets
       in
+      (* TODO *)
       (* When we add new nodes to a set it may cause them to
        * link to each other thus we should merge them. *)
       (* This is O(n^2) only run when sets r modified. I.e. case 1/2 *)
       let coalsce sets = List.fold sets ~init:[] ~f:(fun acc s ->
         List.fold sets ~init:sets ~f:(fun sets sx ->
           if empty_intersect s sx then sx else merge s sx
-
-      in
-      let which node sets =
-        (* Return S::R or None where S is the set containing node and R is the other sets *)
-        let rec aux s acc = match s with
-          | [] -> None
-          | s' :: r -> if Set.mem s node
-            then Some (s' :: (r @ acc))
-            else aux r (s' :: acc)
-        in aux sets []
-      in
-      let exists nodes sets =
-        let rec aux ns = match ns with
-          | [] -> None
-          | n :: r -> match which n sets with
-            | None -> aux r
-            | Some x -> Some x
-        in aux nodes
       in
       let rec aux sets n =
         (* Find neighbours, exn as we only come from known nodes *)
@@ -267,11 +285,11 @@ end = struct
         | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
         | Some [] -> assert false (* Can only find matching set if it has > 1 elt *)
         | None ->
-          match exists ns sets with
+          match which_of_many ns sets with
           (* Case 1: Node neighbour is in known set *)
-          (* TODO We can recur with the neighbour as the node in case 0 *)
+          (* We can treat this similarly to case 0 and save some work *)
+       (* | Some neighbour -> aux sets neighbour *)
           | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
-          (* | Some neighbour -> aux sets neighbour *)
           (* Case 2: Node and neighbours are not in any set already, create new set *)
           | None -> (new_set_from_list (n :: ns) ) :: sets
       in nodes g |> List.fold ~init:[] ~f:aux
