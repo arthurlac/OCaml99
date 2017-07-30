@@ -68,7 +68,6 @@ module Adjc_list (N : Node) : sig
   val cycle : t -> bool
 
   val s_tree : t -> node list
-  val mst    : t -> node list
 
   val isomorphism : t -> t -> bool
 
@@ -178,20 +177,22 @@ end = struct
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
+    (* Tree should b a graph not a list duh *)
     let s_tree g = (* BFS ? *)
-      let rec bfs visited tree curn =
-        if nodes_mem visited curn
+      let rec bfs tree to_vis curn =
+        if nodes_mem tree curn
         then vis_next
-        else match Hashtbl.find g curn with
-          | None -> None
+        else
+          let t' = curn :: tree in
+          match Hashtbl.find g curn with
+          | None -> vis_next
           | Some nodes ->
-            let t' = curn :: tree in
-            let v' = curn :: visited in
-            List.fold nodes ~init:None
-              ~f:(fun _ n -> bfs v' p' n)
-      in try bfs [] [] origin with Ret a -> a
-
-    let mst g = failwith "uninmplemented"
+      and vis_next to_vis t =
+        match to_vis with
+        | [] -> t
+        | hd :: r -> bfs vis t r hd
+      in bfs [] [] origin
+      (* What is origin ??? first of nodes? *)
 
     let isomorphism g h =
       let g_n = nodes g in
@@ -272,9 +273,21 @@ end = struct
       (* When we add new nodes to a set it may cause them to
        * link to each other thus we should merge them. *)
       (* This is O(n^2) only run when sets r modified. I.e. case 1/2 *)
-      let coalsce sets = List.fold sets ~init:[] ~f:(fun acc s ->
-        List.fold sets ~init:sets ~f:(fun sets sx ->
-          if empty_intersect s sx then sx else merge s sx
+      let coalsce sets =
+
+
+
+
+
+
+        let rec aux is sets acc = match to_check with
+          | [] -> acc
+          | s :: r ->
+            if empty_intersect s is
+            then s :: acc
+            else (merge s sx) :: acc
+
+
       in
       let rec aux sets n =
         (* Find neighbours, exn as we only come from known nodes *)
