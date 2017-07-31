@@ -60,6 +60,9 @@ module Adjc_list (N : Node) : sig
   val from_edge_list : (node * node) list -> t
   val to_edge_list   : t -> (node * node) list
 
+  val has_node   : t -> node -> bool
+  val add_edge   : t -> (node * node) -> t
+
   val is_connected : t -> node -> node -> bool
   val path         : t -> node -> node -> node list option
 
