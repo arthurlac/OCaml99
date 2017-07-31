@@ -181,16 +181,18 @@ end = struct
     let s_tree g = (* BFS ? *)
       let rec bfs tree to_vis curn =
         if nodes_mem tree curn
-        then vis_next
+        then vis_next to_vis tree
         else
           let t' = curn :: tree in
           match Hashtbl.find g curn with
-          | None -> vis_next
+          | None -> vis_next to_visit t'
           | Some nodes ->
-      and vis_next to_vis t =
-        match to_vis with
-        | [] -> t
-        | hd :: r -> bfs vis t r hd
+            let tv' = to_visit @ nodes in
+            vis_next tv' t'
+      and vis_next to_visit tree =
+        match to_visit with
+        | [] -> tree
+        | hd :: r -> bfs vis tree r hd
       in bfs [] [] origin
       (* What is origin ??? first of nodes? *)
 
