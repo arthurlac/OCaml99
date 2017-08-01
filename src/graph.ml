@@ -57,6 +57,7 @@ module Adjc_list (N : Node) : sig
   val nodes      : t -> node list
   val neighbours : t -> node -> node list option
 
+  val empty : unit -> t
   val from_edge_list : (node * node) list -> t
   val to_edge_list   : t -> (node * node) list
 
@@ -111,9 +112,10 @@ end = struct
     let from_edge_list el =
       let tbl = Hashtbl.create ~hashable:(N.hashable) () in
       (* TODO Comm *) (* TODO Adapt for directed graph *)
-      List.iter el ~f:(fun (x, y) ->
-          add_edge ~dir:false tbl y x);
+      List.iter el ~f:(fun (x, y) -> add_edge ~dir:false tbl y x);
       tbl
+
+    let empty () = from_edge_list []
 
     let pair_eq (a, b) (c, d) =
       if a = c && b = d then true else
@@ -188,24 +190,21 @@ end = struct
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
-    (* Tree should b a graph not a list duh *)
-    let s_tree g = (* BFS ? *)
-      let rec bfs tree to_vis curn =
-        if nodes_mem tree curn
-        then vis_next to_vis tree
-        else
-          let t' = curn :: tree in
-          match Hashtbl.find g curn with
-          | None -> vis_next to_visit t'
-          | Some nodes ->
-            let tv' = to_visit @ nodes in
-            vis_next tv' t'
-      and vis_next to_visit tree =
-        match to_visit with
-        | [] -> tree
-        | hd :: r -> bfs vis tree r hd
-      in bfs [] [] origin
-      (* What is origin ??? first of nodes? *)
+    let s_tree g ~dir =
+      let g' = empty () in
+      (* TODO ???? how to choose first edge *)
+      let node_f, node_t = rand_edge g in
+      let rec bfs to_vis =
+        match to_vis with
+        | [] -> g'
+        | (curn, next) :: rest ->
+          if has_node g' next
+          then bfs rest
+          else
+            add_edge ~dir g' curn next;
+            let es = edges g next in
+            bfs (rest @ es)
+      in bfs [node_f, node_t]
 
     let isomorphism g h = failwith "unimpl" (*
       let g_n = nodes g in
