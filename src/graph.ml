@@ -61,7 +61,7 @@ module Adjc_list (N : Node) : sig
   val to_edge_list   : t -> (node * node) list
 
   val has_node   : t -> node -> bool
-  val add_edge   : t -> (node * node) -> t
+  val add_edge   : dir:bool -> t -> (node * node) -> unit
 
   val is_connected : t -> node -> node -> bool
   val path         : t -> node -> node -> node list option
@@ -93,18 +93,26 @@ end = struct
     let nodes          = Hashtbl.keys
     let neighbours g n = Hashtbl.find g n
 
+    let has_node = Hashtbl.mem
+
     let nodes_mem l n = List.mem ~equal:(N.equal) l n
+
+    let rec add_edge g f t ~dir = (* f : from , t : to *)
+      if not dir then
+        let neighbours = match Hashtbl.find g f with
+          | None -> [] | Some l -> l
+        in if nodes_mem neighbours t then () else
+        Hashtbl.set g ~key:f ~data:(t :: neighbours)
+      else begin
+        add_edge g f t ~dir:false;
+        add_edge g t f ~dir:false
+      end
 
     let from_edge_list el =
       let tbl = Hashtbl.create ~hashable:(N.hashable) () in
       (* TODO Comm *) (* TODO Adapt for directed graph *)
-      let add_edge f t = (* f : from , t : to *)
-          let neighbours = match Hashtbl.find tbl f with
-            | None -> [] | Some l -> l
-          in if nodes_mem neighbours t then () else
-          Hashtbl.set tbl ~key:f ~data:(t :: neighbours)
-      in
-      List.iter el ~f:(fun (x, y) -> add_edge x y; add_edge y x);
+      List.iter el ~f:(fun (x, y) ->
+          add_edge ~dir:false tbl y x);
       tbl
 
     let pair_eq (a, b) (c, d) =
@@ -199,7 +207,7 @@ end = struct
       in bfs [] [] origin
       (* What is origin ??? first of nodes? *)
 
-    let isomorphism g h =
+    let isomorphism g h = failwith "unimpl" (*
       let g_n = nodes g in
       let h_n = nodes h in
       let open Hashtbl in
@@ -207,6 +215,7 @@ end = struct
       let aux () =  not List.exists2 g_n h_n ~f:(fun gx hx ->
           let gxn, hxn = find_exn g gx, find_exn h hx =
       ) in try aux () with Invalid_argument _ -> false
+                                               *)
 
     let degree g n = match Hashtbl.find g n with
       | None -> None
