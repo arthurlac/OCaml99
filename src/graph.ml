@@ -77,7 +77,7 @@ module Adjc_list (N : Node) : sig
 
   val degree       : t -> node -> int option
 
-  val dfs_traverse : t -> node -> node -> node list option
+  val dfs : t -> node -> node -> node list option
 
   val split_unconnected : t -> t list
 
@@ -192,7 +192,6 @@ end = struct
 
     let s_tree g ~dir =
       let g' = empty () in
-      (* TODO ???? how to choose first edge *)
       let node_f, node_t = rand_edge g in
       let rec bfs to_vis =
         match to_vis with
