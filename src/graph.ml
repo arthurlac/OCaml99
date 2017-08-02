@@ -93,7 +93,7 @@ end = struct
     exception Ret of (node list option)
 
     let nodes      = Hashtbl.keys
-    let neighbours = Hashtbl.find
+    let neighbours g n = Hashtbl.find g n
     let edges g n =
       match Hashtbl.find g n with
       | None -> None
@@ -108,8 +108,10 @@ end = struct
       if not dir then
         let ns = match neighbours g f with
           | None -> [] | Some l -> l
-        in if nodes_mem ns t then () else
-        Hashtbl.set g ~key:f ~data:(t :: ns)
+        in
+        if nodes_mem ns t
+        then ()
+        else Hashtbl.set g ~key:f ~data:(t :: ns)
       else begin
         add_edge g f t ~dir:false;
         add_edge g t f ~dir:false
