@@ -56,13 +56,14 @@ module Adjc_list (N : Node) : sig
 
   val nodes      : t -> node list
   val neighbours : t -> node -> node list option
+  val edges      : t -> node -> (node * node) list option
 
   val empty : unit -> t
   val from_edge_list : (node * node) list -> t
   val to_edge_list   : t -> (node * node) list
 
   val has_node   : t -> node -> bool
-  val add_edge   : dir:bool -> t -> (node * node) -> unit
+  val add_edge   : t -> node -> node -> dir:bool -> unit
 
   val is_connected : t -> node -> node -> bool
   val path         : t -> node -> node -> node list option
@@ -91,8 +92,13 @@ end = struct
 
     exception Ret of (node list option)
 
-    let nodes          = Hashtbl.keys
-    let neighbours g n = Hashtbl.find g n
+    let nodes      = Hashtbl.keys
+    let neighbours = Hashtbl.find
+    let edges g n =
+      match Hashtbl.find g n with
+      | None -> None
+      | Some ns -> Some (
+          List.map ns ~f:(fun n' -> (n, n')))
 
     let has_node = Hashtbl.mem
 
@@ -100,10 +106,10 @@ end = struct
 
     let rec add_edge g f t ~dir = (* f : from , t : to *)
       if not dir then
-        let neighbours = match Hashtbl.find g f with
+        let ns = match neighbours g f with
           | None -> [] | Some l -> l
-        in if nodes_mem neighbours t then () else
-        Hashtbl.set g ~key:f ~data:(t :: neighbours)
+        in if nodes_mem ns t then () else
+        Hashtbl.set g ~key:f ~data:(t :: ns)
       else begin
         add_edge g f t ~dir:false;
         add_edge g t f ~dir:false
@@ -183,9 +189,9 @@ end = struct
           if is_back_edge curn ns edges_known visited_nodes
           then true
           else aux
-              (merge ns visited_nodes ~compare:N.compare)
-              (merge edges_known (make_edges curn ns) ~compare:(fun a b -> pair_eq a b |> Bool.to_int))
-              (merge to_visit ns ~compare:N.compare )
+              (merge ns visited_nodes)
+              (merge edges_known (make_edges curn ns))
+              (merge to_visit ns)
       in aux [] [] [origin]
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
@@ -270,8 +276,9 @@ end = struct
           | None -> aux r
           | Some x -> Some x
       in aux nodes
-    in
 
+    let split_unconnected g = failwith "unimpl"
+    (*
     let split_unconnected g =
       let set_add_list s l =
         List.fold l ~init:s ~f:(fun s nd -> Set.add s nd)
@@ -318,6 +325,7 @@ end = struct
           (* Case 2: Node and neighbours are not in any set already, create new set *)
           | None -> (new_set_from_list (n :: ns) ) :: sets
       in nodes g |> List.fold ~init:[] ~f:aux
+           *)
 
     let is_bipartite g n = failwith "uninmplemented"
 
