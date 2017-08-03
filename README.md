@@ -192,6 +192,7 @@ end
 Gray code and memoised gray code
 ```ocaml
 val gray_code        :         int -> string list
+(* returns a function which memoises previous work*)
 val gray_code_fn_gen : unit -> int -> string list
 ```
 
