@@ -82,7 +82,7 @@ module Adjc_list (N : Node) : sig
 
   val split_unconnected : t -> t list
 
-  val is_bipartite : t -> node -> bool
+  val is_bipartite : t -> bool
 
   val gen_reg : int -> t
 
@@ -220,7 +220,12 @@ end = struct
       | None | Some [] -> None
       | Some (n :: _) -> Some (bfs [(node, n)])
 
-    let isomorphism g h = failwith "unimpl" (*
+    let isomorphism g h =
+
+      let rec
+
+
+
       let g_n = nodes g in
       let h_n = nodes h in
       let open Hashtbl in
@@ -228,11 +233,12 @@ end = struct
       let aux () =  not List.exists2 g_n h_n ~f:(fun gx hx ->
           let gxn, hxn = find_exn g gx, find_exn h hx =
       ) in try aux () with Invalid_argument _ -> false
-                                               *)
 
     let degree g n = match Hashtbl.find g n with
       | None -> None
       | Some ns -> Some (List.length ns)
+
+    let set_add_list s l = List.fold l ~init:s ~f:(fun s nd -> Set.add s nd)
 
     let dfs g origin target =
       (* Set up a stack to hold nodes to visit *)
@@ -289,9 +295,6 @@ end = struct
     let split_unconnected g = failwith "unimpl"
     (*
     let split_unconnected g =
-      let set_add_list s l =
-        List.fold l ~init:s ~f:(fun s nd -> Set.add s nd)
-      in
       let new_set_from_list sets l =
         let s = Set.empty ~comparator:N.comparator in
         let new_set = set_add_list s l in
@@ -336,7 +339,39 @@ end = struct
       in nodes g |> List.fold ~init:[] ~f:aux
            *)
 
-    let is_bipartite g n = failwith "uninmplemented"
+    let is_bipartite g =
+      let comparator = N.comparator in
+      let s_empty () = Set.empty ~comparator in
+
+
+
+      let init_u = (* contains first node *)
+      let init_v = (* contains first nodes neighbours *)
+
+      let disj a b = Set.diff a b |> Set.length |> (fun l -> l > 0) in
+      (* TODO Comm *)
+      let rec find to_check u v ns = match to_check with
+        | [] -> None
+        | hd :: tl -> match Set.mem u hd, Set.mem v hd with
+          | true, true -> None
+          | false, false -> find tl u v ns (* Try next nd *)
+          | true, false -> Some (set_add_list u ns) v
+          | false, true -> Some u (set_add_list v ns)
+      in
+      let rec aux u v to_check = match to_check with
+        | [] -> true
+        | hd :: tail ->
+          let ns = neighbours g hd in
+          match Set.mem u hd, Set.mem v hd with
+          | true, true -> false
+          | true, false | false, true -> aux u v tail
+          | false, false ->
+            match find ns u v ns with
+            | None -> false
+            | Some (u', v') -> check u' v' tail
+      (* Ensure u and v remain disjoint as we add new nodes *)
+      and check u v tail = if disj u v then false else aux u v tail
+      in aux init_u init_v nodes
 
     let gen_reg k = failwith "uninmplemented"
 
