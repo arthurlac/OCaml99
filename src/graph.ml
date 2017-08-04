@@ -72,7 +72,7 @@ module Adjc_list (N : Node) : sig
 
   val cycle : t -> bool
 
-  val s_tree : t -> node list
+  val s_tree : t -> node -> t option
 
   val isomorphism : t -> t -> bool
 
@@ -91,6 +91,7 @@ end = struct
     type t = (node, node list) Hashtbl.t
 
     exception Ret of (node list option)
+    exception No_neighbours
 
     let nodes      = Hashtbl.keys
     let neighbours g n = Hashtbl.find g n
@@ -99,6 +100,10 @@ end = struct
       | None -> None
       | Some ns -> Some (
           List.map ns ~f:(fun n' -> (n, n')))
+    let edges_exn g n =
+      match Hashtbl.find g n with
+      | None -> raise No_neighbours
+      | Some ns -> List.map ns ~f:(fun n' -> (n, n'))
 
     let has_node = Hashtbl.mem
 
@@ -198,9 +203,8 @@ end = struct
 
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
-    let s_tree g ~dir =
+    let s_tree g node =
       let g' = empty () in
-      let node_f, node_t = rand_edge g in
       let rec bfs to_vis =
         match to_vis with
         | [] -> g'
@@ -208,10 +212,13 @@ end = struct
           if has_node g' next
           then bfs rest
           else
-            add_edge ~dir g' curn next;
-            let es = edges g next in
+            let _ = add_edge ~dir:false g' curn next in
+            let es = edges_exn g next in
             bfs (rest @ es)
-      in bfs [node_f, node_t]
+      in
+      match neighbours g node with
+      | None | Some [] -> None
+      | Some (n :: _) -> Some (bfs [(node, n)])
 
     let isomorphism g h = failwith "unimpl" (*
       let g_n = nodes g in
