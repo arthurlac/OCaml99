@@ -341,22 +341,21 @@ end = struct
 
     let is_bipartite g =
       let comparator = N.comparator in
-      let s_empty () = Set.empty ~comparator in
-
-
-
-      let init_u = (* contains first node *)
-      let init_v = (* contains first nodes neighbours *)
-
       let disj a b = Set.diff a b |> Set.length |> (fun l -> l > 0) in
+      let s_empty () = Set.empty ~comparator in
+      let to_set l = s_empty () |> set_add_list in
+      let n = first_node g in
+      let init_u = [n] |> to_set in (* contains first node *)
+      let init_v = neighbours g n |> to_set in (* contains first nodes neighbours *)
       (* TODO Comm *)
       let rec find to_check u v ns = match to_check with
         | [] -> None
         | hd :: tl -> match Set.mem u hd, Set.mem v hd with
           | true, true -> None
-          | false, false -> find tl u v ns (* Try next nd *)
-          | true, false -> Some (set_add_list u ns) v
-          | false, true -> Some u (set_add_list v ns)
+          | false, false -> find tl u v ns (* Try next node *)
+          (* TODO Check *)
+          | true, false -> Some u (set_add_list v ns)
+          | false, true -> Some (set_add_list u ns) v
       in
       let rec aux u v to_check = match to_check with
         | [] -> true
