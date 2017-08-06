@@ -340,37 +340,54 @@ end = struct
            *)
 
     let is_bipartite g =
-      let comparator = N.comparator in
       let disj a b = Set.diff a b |> Set.length |> (fun l -> l > 0) in
-      let s_empty () = Set.empty ~comparator in
+      let s_empty () = Set.empty ~comparator:N.comparator in
       let to_set l = s_empty () |> set_add_list in
       let n = first_node g in
       let init_u = [n] |> to_set in (* contains first node *)
       let init_v = neighbours g n |> to_set in (* contains first nodes neighbours *)
-      (* TODO Comm *)
-      let rec find to_check u v ns = match to_check with
-        | [] -> None
-        | hd :: tl -> match Set.mem u hd, Set.mem v hd with
-          | true, true -> None
-          | false, false -> find tl u v ns (* Try next node *)
-          (* TODO Check *)
-          | true, false -> Some u (set_add_list v ns)
-          | false, true -> Some (set_add_list u ns) v
+      (* Try to place a neighbour we can use to join *)
+      let place n ns u v =
+        (* Return aux fn *)
+        let ret to_add_n to_add_ns =
+          ( Set.add to_add_n  n
+          , Set.add to_add_ns ns
+          )
+        in
+        let rec p_aux to_check = match to_check with
+          | [] -> None
+          | hd :: tl -> match Set.mem u hd, Set.mem v hd with
+            (* we can not keep the sets disjoint *)
+            | true, true -> None
+            (* no links, try next neighbour *)
+            | false, false -> p_aux tl
+            (* IF we can link a neighbour of n to set alpha and not beta
+             * THEN n must be in set beta and and neighbours in alpha.
+             * Afterwards we need to check alpha' and beta'
+             * are disjoint where alpha' and beta' include the addition
+             * of ns and n respectively.
+             *)
+            | true, false -> Some (ret u v)
+            | false, true -> Some (ret v u)
+        in p_aux ns
       in
-      let rec aux u v to_check = match to_check with
+      let rec check u v to_check = match to_check with
         | [] -> true
         | hd :: tail ->
-          let ns = neighbours g hd in
           match Set.mem u hd, Set.mem v hd with
+          (* Node in both u & v, thus not bipartite *)
           | true, true -> false
-          | true, false | false, true -> aux u v tail
+          (* Node already in u |X| v, place next node *)
+          | true, false | false, true -> check u v tail
+          (* place the node in u or v *)
           | false, false ->
-            match find ns u v ns with
+            let ns = neighbours g hd in
+            match place hd ns u v with
+            (* no possible placement, not bipartite *)
             | None -> false
-            | Some (u', v') -> check u' v' tail
-      (* Ensure u and v remain disjoint as we add new nodes *)
-      and check u v tail = if disj u v then false else aux u v tail
-      in aux init_u init_v nodes
+            (* next node to check if disjoint sets can be maintained *)
+            | Some (u', v') -> if disj u v then false else check u v tail
+      in check init_u init_v nodes
 
     let gen_reg k = failwith "uninmplemented"
 
