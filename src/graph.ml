@@ -14,9 +14,10 @@ open Core
 module type Node = sig
     type t
     include Hashable.S with type t := t
+    include Comparator.S with type t := t
 
-    val equal   : t -> t -> bool
-    val compare : t -> t -> int
+    val equal      : t -> t -> bool
+    val compare    : t -> t -> int
 end
 
 (* List all edges, an edge being a pair of nodes *)
@@ -57,6 +58,7 @@ module Adjc_list (N : Node) : sig
   val nodes      : t -> node list
   val neighbours : t -> node -> node list option
   val edges      : t -> node -> (node * node) list option
+  val edge_eq    : node * node -> node * node -> bool
 
   val first_node : t -> node option
 
@@ -134,7 +136,13 @@ end = struct
 
     let empty () = from_edge_list []
 
-    let pair_eq (a, b) (c, d) =
+    let degree g n = match Hashtbl.find g n with
+      | None -> None
+      | Some ns -> Some (List.length ns)
+
+    let set_add_list s l = List.fold l ~init:s ~f:(fun s nd -> Set.add s nd)
+
+    let edge_eq (a, b) (c, d) =
       if a = c && b = d then true else
       if a = d && b = c then true else false
 
@@ -143,7 +151,7 @@ end = struct
       Hashtbl.fold t ~init:[] ~f:(fun ~key ~data acc ->
         (* add NEW edges to acc *)
         List.fold data ~init:acc ~f:(fun acc x ->
-            if List.mem ~equal:pair_eq acc (key, x)
+            if List.mem ~equal:edge_eq acc (key, x)
             then acc
             else (x, key) :: acc
             )
@@ -189,7 +197,7 @@ end = struct
         if List.exists curn_neighbours ~f:(fun n -> nodes_mem visited n)
         (* If we are check it's not via a known edge *)
         then List.exists curn_neighbours ~f:(fun n ->
-            not (List.mem edges_known (curn, n) ~equal:pair_eq))
+            not (List.mem edges_known (curn, n) ~equal:edge_eq))
         else false
       in
       let rec aux visited_nodes edges_known to_visit =
@@ -205,6 +213,7 @@ end = struct
               (merge to_visit ns)
       in aux [] [] [origin]
 
+    (* TODO Dp this? probs lots of rept work *)
     let cycle g = nodes g |> List.exists ~f:(fun n -> node_cycle g n)
 
     let s_tree g node =
@@ -224,25 +233,8 @@ end = struct
       | None | Some [] -> None
       | Some (n :: _) -> Some (bfs [(node, n)])
 
-    let isomorphism g h =
-
-      let rec
-
-
-
-      let g_n = nodes g in
-      let h_n = nodes h in
-      let open Hashtbl in
-      (* find a mismatch *)
-      let aux () =  not List.exists2 g_n h_n ~f:(fun gx hx ->
-          let gxn, hxn = find_exn g gx, find_exn h hx =
-      ) in try aux () with Invalid_argument _ -> false
-
-    let degree g n = match Hashtbl.find g n with
-      | None -> None
-      | Some ns -> Some (List.length ns)
-
-    let set_add_list s l = List.fold l ~init:s ~f:(fun s nd -> Set.add s nd)
+    (* TODO *)
+    let isomorphism g h = failwith "unimpl"
 
     let dfs g origin target =
       (* Set up a stack to hold nodes to visit *)
@@ -309,24 +301,17 @@ end = struct
        * link to each other thus we should merge them. *)
       (* This is O(n^2) only run when sets r modified. I.e. case 1/2 *)
       let coalsce sets =
-
-
-
-
-
-
         let rec aux is sets acc = match to_check with
           | [] -> acc
           | s :: r ->
             if empty_intersect s is
             then s :: acc
             else (merge s sx) :: acc
-
-
       in
       let rec aux sets n =
         (* Find neighbours, exn as we only come from known nodes *)
         let ns = Hashtbl.find_exn g n in
+
         match which n sets with
         (* Case 0: Node is in known set. Push neighbours and coalesce *)
         (* new connections may result from adding neighbours. *)
@@ -347,9 +332,10 @@ end = struct
       | None -> false
       | Some n ->
         let disj a b = Set.diff a b |> Set.length |> (fun l -> l > 0) in
-        let to_set l = Set.empty ~comparator:N.comparator |> set_add_list in
+        let to_set l = Set.empty ~comparator:N.comparator |> set_add_list l in
         let init_u = [n] |> to_set in (* contains first node *)
         let init_v = neighbours g n |> to_set in (* contains first nodes neighbours *)
+        let nodes = nodes g in
         (* Try to place a neighbour we can use to join *)
         let place n ns u v =
           (* Return aux fn *)
@@ -385,12 +371,14 @@ end = struct
             | true, false | false, true -> check u v tail
             (* place the node in u or v *)
             | false, false ->
-              let ns = neighbours g hd in
-              match place hd ns u v with
-              (* no possible placement, not bipartite *)
-              | None -> false
-              (* next node to check if disjoint sets can be maintained *)
-              | Some (u', v') -> if disj u v then false else check u v tail
+              match neighbours g hd with
+               | None -> false
+               | Some ns ->
+                match place hd ns u v with
+                (* no possible placement, not bipartite *)
+                | None -> false
+                (* next node to check if disjoint sets can be maintained *)
+                | Some (u', v') -> if disj u v then false else check u v tail
         in check init_u init_v nodes
 
     let gen_reg k = failwith "uninmplemented"
