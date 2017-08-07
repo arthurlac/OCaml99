@@ -262,14 +262,13 @@ end = struct
         | Some n -> search visited path n
       in search [] [] origin
 
-    let known sets n = List.exists ~f:(fun s -> Set.mem s n)
-
     (* Finds membership of node in sets
-     * Return None
-     * or Some S::R
-     *   where S is the set containing node
-     *   and R is the other sets.
-     * *)
+     * Invariant :
+     *  Return None
+     *  or Some S::R
+     *    where S is the set containing node
+     *    and R is the other sets.
+     *)
     let which node sets =
       let rec aux sl acc = match sl with
         | [] -> None
@@ -288,45 +287,41 @@ end = struct
           | Some x -> Some x
       in aux nodes
 
-    let split_unconnected g = failwith "unimpl"
-    (*
     let split_unconnected g =
       let new_set_from_list sets l =
         let s = Set.empty ~comparator:N.comparator in
         let new_set = set_add_list s l in
         new_set :: sets
       in
-      (* TODO *)
-      (* When we add new nodes to a set it may cause them to
-       * link to each other thus we should merge them. *)
-      (* This is O(n^2) only run when sets r modified. I.e. case 1/2 *)
-      let coalsce sets =
-        let rec aux is sets acc = match to_check with
+      (* Ensures each set is disjoint to all others.
+       * If it finds to sets which are not disjoint then merges them.
+       *)
+      let coalesce sets =
+        let rec aux to_check acc = match to_check with
           | [] -> acc
           | s :: r ->
             if empty_intersect s is
             then s :: acc
             else (merge s sx) :: acc
       in
-      let rec aux sets n =
+      let rec create_sets sets n =
         (* Find neighbours, exn as we only come from known nodes *)
         let ns = Hashtbl.find_exn g n in
-
+        (* Finds membership of node in sets, 3 cases to consider. *)
         match which n sets with
-        (* Case 0: Node is in known set. Push neighbours and coalesce *)
+        (* Case 0: Node is in known set. Push neighbours *)
         (* new connections may result from adding neighbours. *)
-        | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
         | Some [] -> assert false (* Can only find matching set if it has > 1 elt *)
+        | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest)
         | None ->
           match which_of_many ns sets with
           (* Case 1: Node neighbour is in known set *)
-          (* We can treat this similarly to case 0 and save some work *)
-       (* | Some neighbour -> aux sets neighbour *)
-          | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest) |> coalesce
+          (* We can treat this similarly to case 0 and save some work
+          | Some neighbour -> create_sets sets neighbour *)
+          | Some (set :: rest) -> let set' = set_add_list set ns in (set' :: rest)
           (* Case 2: Node and neighbours are not in any set already, create new set *)
           | None -> (new_set_from_list (n :: ns) ) :: sets
-      in nodes g |> List.fold ~init:[] ~f:aux
-           *)
+      in nodes g |> List.fold ~init:[] ~f:create_sets |> coalesce
 
     let is_bipartite g = match first_node g with
       | None -> false
