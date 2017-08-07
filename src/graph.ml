@@ -58,6 +58,8 @@ module Adjc_list (N : Node) : sig
   val neighbours : t -> node -> node list option
   val edges      : t -> node -> (node * node) list option
 
+  val first_node : t -> node option
+
   val empty : unit -> t
   val from_edge_list : (node * node) list -> t
   val to_edge_list   : t -> (node * node) list
@@ -104,6 +106,8 @@ end = struct
       match Hashtbl.find g n with
       | None -> raise No_neighbours
       | Some ns -> List.map ns ~f:(fun n' -> (n, n'))
+
+    let first_node g = Hashtbl.keys g |> List.hd
 
     let has_node = Hashtbl.mem
 
@@ -339,55 +343,55 @@ end = struct
       in nodes g |> List.fold ~init:[] ~f:aux
            *)
 
-    let is_bipartite g =
-      let disj a b = Set.diff a b |> Set.length |> (fun l -> l > 0) in
-      let s_empty () = Set.empty ~comparator:N.comparator in
-      let to_set l = s_empty () |> set_add_list in
-      let n = first_node g in
-      let init_u = [n] |> to_set in (* contains first node *)
-      let init_v = neighbours g n |> to_set in (* contains first nodes neighbours *)
-      (* Try to place a neighbour we can use to join *)
-      let place n ns u v =
-        (* Return aux fn *)
-        let ret to_add_n to_add_ns =
-          ( Set.add to_add_n  n
-          , Set.add to_add_ns ns
-          )
+    let is_bipartite g = match first_node g with
+      | None -> false
+      | Some n ->
+        let disj a b = Set.diff a b |> Set.length |> (fun l -> l > 0) in
+        let to_set l = Set.empty ~comparator:N.comparator |> set_add_list in
+        let init_u = [n] |> to_set in (* contains first node *)
+        let init_v = neighbours g n |> to_set in (* contains first nodes neighbours *)
+        (* Try to place a neighbour we can use to join *)
+        let place n ns u v =
+          (* Return aux fn *)
+          let ret to_add_n to_add_ns =
+            ( Set.add      to_add_n  n
+            , set_add_list to_add_ns ns
+            )
+          in
+          let rec p_aux to_check = match to_check with
+            | [] -> None
+            | hd :: tl -> match Set.mem u hd, Set.mem v hd with
+              (* we can not keep the sets disjoint *)
+              | true, true -> None
+              (* no links, try next neighbour *)
+              | false, false -> p_aux tl
+              (* IF we can link a neighbour of n to set alpha and not beta
+               * THEN n must be in set beta and and neighbours in alpha.
+               * Afterwards we need to check alpha' and beta'
+               * are disjoint where alpha' and beta' include the addition
+               * of ns and n respectively.
+               *)
+              | true, false -> Some (ret u v)
+              | false, true -> Some (ret v u)
+          in p_aux ns
         in
-        let rec p_aux to_check = match to_check with
-          | [] -> None
-          | hd :: tl -> match Set.mem u hd, Set.mem v hd with
-            (* we can not keep the sets disjoint *)
-            | true, true -> None
-            (* no links, try next neighbour *)
-            | false, false -> p_aux tl
-            (* IF we can link a neighbour of n to set alpha and not beta
-             * THEN n must be in set beta and and neighbours in alpha.
-             * Afterwards we need to check alpha' and beta'
-             * are disjoint where alpha' and beta' include the addition
-             * of ns and n respectively.
-             *)
-            | true, false -> Some (ret u v)
-            | false, true -> Some (ret v u)
-        in p_aux ns
-      in
-      let rec check u v to_check = match to_check with
-        | [] -> true
-        | hd :: tail ->
-          match Set.mem u hd, Set.mem v hd with
-          (* Node in both u & v, thus not bipartite *)
-          | true, true -> false
-          (* Node already in u |X| v, place next node *)
-          | true, false | false, true -> check u v tail
-          (* place the node in u or v *)
-          | false, false ->
-            let ns = neighbours g hd in
-            match place hd ns u v with
-            (* no possible placement, not bipartite *)
-            | None -> false
-            (* next node to check if disjoint sets can be maintained *)
-            | Some (u', v') -> if disj u v then false else check u v tail
-      in check init_u init_v nodes
+        let rec check u v to_check = match to_check with
+          | [] -> true
+          | hd :: tail ->
+            match Set.mem u hd, Set.mem v hd with
+            (* Node in both u & v, thus not bipartite *)
+            | true, true -> false
+            (* Node already in u |X| v, place next node *)
+            | true, false | false, true -> check u v tail
+            (* place the node in u or v *)
+            | false, false ->
+              let ns = neighbours g hd in
+              match place hd ns u v with
+              (* no possible placement, not bipartite *)
+              | None -> false
+              (* next node to check if disjoint sets can be maintained *)
+              | Some (u', v') -> if disj u v then false else check u v tail
+        in check init_u init_v nodes
 
     let gen_reg k = failwith "uninmplemented"
 
