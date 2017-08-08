@@ -296,13 +296,12 @@ end = struct
       (* Ensures each set is disjoint to all others.
        * If it finds to sets which are not disjoint then merges them.
        *)
-      let coalesce sets =
-        let rec aux to_check acc = match to_check with
-          | [] -> acc
-          | s :: r ->
-            if empty_intersect s is
-            then s :: acc
-            else (merge s sx) :: acc
+      let coalesce sets = failwith "unimpl" (*
+        for each set in sets
+          if set not disjoint with any other set s'
+          then merge set s' into new_set; return sets + new_set - (set s')
+          else nothing.
+       *)
       in
       let rec create_sets sets n =
         (* Find neighbours, exn as we only come from known nodes *)
@@ -338,6 +337,7 @@ end = struct
             ( Set.add      to_add_n  n
             , set_add_list to_add_ns ns
             )
+          in
           in
           let rec p_aux to_check = match to_check with
             | [] -> None
