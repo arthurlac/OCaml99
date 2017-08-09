@@ -52,6 +52,12 @@ let zip l1 l2 =
         | (Some ll, Some lr) -> zip_aux (Cons ((ll, lr), zipped)) (cdr l1) (cdr l2)
     in zip_aux Empty l1 l2
 
+(* Find the last of a list.  *)
+let rec last = function
+    | Empty -> None
+    | Cons (lst, Empty) -> Some lst
+    | Cons (_, tl) -> last tl
+
 (* Find the last but one box of a list.  *)
 let rec penultimate = function
     | Empty -> None
