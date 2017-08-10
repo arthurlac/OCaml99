@@ -83,7 +83,7 @@ val permu :
 
 ## Arith
 ```ocaml
-Is prime predicate
+(* Is prime predicate *)
 val is_prime : int -> bool
 
 (* Prime sequence generator *)
