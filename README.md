@@ -17,7 +17,7 @@ val append : 'a t -> 'a t -> 'a t
 val zip : 'a t -> 'b t -> ('a * 'b) t option
 
 (* Find the last box of a list. *)
-val : last : 'a -> 'a option
+val last : 'a -> 'a option
 
 (* Find the last but one box of a list.  *)
 val penultimate : 'a t -> ('a * 'a) option
@@ -95,7 +95,7 @@ val gcd : int -> int -> int
 (* Coprime predicate *)
 val coprime : int -> int -> bool
 
-(* [Euler's totient function](https://en.wikipedia.org/wiki/Euler%27s_totient_function) *)
+(* Euler's totient function *)
 val phi : int -> int
 
 (* Prime factorisation *)
