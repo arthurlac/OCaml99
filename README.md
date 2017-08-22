@@ -4,6 +4,7 @@ Based on [this problem set](http://www.ic.unicamp.br/~meidanis/courses/mc336/200
 
 ## Lists
 ```ocaml
+(* Base type and functions *)
 type 'a t = Empty | Cons of 'a * 'a t
 val car : 'a t -> 'a option
 val car_exn : 'a t -> 'a
